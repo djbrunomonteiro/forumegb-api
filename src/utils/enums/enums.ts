@@ -4,3 +4,10 @@ export enum EPermission {
   MASTERDJ = 'MASTERDJ',
   ADMDJ = 'ADMDJ',
 }
+
+
+export enum EStatusPost {
+  PUBLISHED = 'PUBLISHED',
+  ARCHIVED = 'ARCHIVED',
+  DELETED = 'DELETED'
+}

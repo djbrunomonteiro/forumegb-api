@@ -1,4 +1,4 @@
-import { EPermission } from 'src/utils/enums/permission';
+import { EPermission } from 'src/utils/enums/enums';
 import {
   Column,
   CreateDateColumn,

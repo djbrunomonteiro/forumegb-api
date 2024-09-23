@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './modules/user/user.module';
 import { JwtModule } from '@nestjs/jwt';
+import { PostModule } from './modules/post/post.module';
 
 @Module({
   imports: [
@@ -23,7 +24,8 @@ import { JwtModule } from '@nestjs/jwt';
       synchronize: true,
     }),
     UserModule,
-    JwtModule
+    JwtModule,
+    PostModule
   ],
   controllers: [AppController],
   providers: [AppService],
