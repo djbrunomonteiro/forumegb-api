@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
-@Controller('post')
+@Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
@@ -13,10 +13,8 @@ export class PostController {
   }
 
   @Get()
-  findAll() {
-    console.log("all");
-    
-    return this.postService.findAll();
+  findAll(@Query('start') start: number, @Query('limit') limit: number) {
+    return this.postService.findAll(start, limit);
   }
 
   @Get(':id')

@@ -5,7 +5,7 @@ import { PostEntity } from './entities/post.entity';
 import { Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
-import { firstValueFrom, from, lastValueFrom, map, mergeMap, Observable, of, switchMap, toArray } from 'rxjs';
+import { firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
 
 @Injectable()
 export class PostService {
@@ -39,10 +39,10 @@ export class PostService {
     }
   }
 
-  async findAll() {
+  async findAll(start = 1, limit = 50) {
     let response: IResponse;
     try {
-      let results = await this.getPostsWithChildren();
+      let results = await this.getPostsWithChildren(start, limit);
       results = this.sortById(results)
 
       response = {
@@ -66,10 +66,13 @@ export class PostService {
     return posts.sort((a, b) => a.id - b.id);
   }
 
-  async getPostsWithChildren() {
+  async getPostsWithChildren(start = 1, limit = 50) {
     // Primeiro, busca os posts pais
     let parents = await this.postRepository.createQueryBuilder('post')
     .where('post.parent_id IS NULL')
+    .orderBy('post.id', 'DESC')  // Ordena pelos itens mais recentes
+    .limit(limit)                     // Limita ao número de itens por página
+    .offset((start - 1) * limit) 
     .getMany() as CreatePostDto[];
     
 
