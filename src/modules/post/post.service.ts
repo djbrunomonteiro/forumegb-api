@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
@@ -19,10 +19,7 @@ export class PostService {
     let response: IResponse;
     try {
       delete createPostDto.id;
-      const newPost = await this.postRepository.save(createPostDto);
-
-      const {results} = await this.findOne(newPost.id);
-
+      const results = await this.postRepository.save(createPostDto);
       response = {
         error: false,
         results,
@@ -35,7 +32,7 @@ export class PostService {
         results: error?.message,
         message: 'falha ao realizar operação',
       };
-      return response;
+      throw new BadRequestException(response)
     }
   }
 
@@ -43,6 +40,8 @@ export class PostService {
     let response: IResponse;
     try {
       let results = await this.getPostsWithChildren(start, limit);
+      console.log(results);
+      
       results = this.sortById(results)
 
       response = {
@@ -74,9 +73,6 @@ export class PostService {
     .limit(limit)                     // Limita ao número de itens por página
     .offset((start - 1) * limit) 
     .getMany() as CreatePostDto[];
-    
-
-    console.log('paisss', parents);
     
     const results$ = from(parents).pipe(
       mergeMap(async parent => {
@@ -115,12 +111,12 @@ export class PostService {
     )
   }
 
-  async findOne(id: number) {
+  async findOne(slug: string) {
 
     let response: IResponse;
     let results;
     try {
-      let parent = await this.postRepository.findOneBy({id}) as CreatePostDto;
+      let parent = await this.postRepository.findOneBy({slug}) as CreatePostDto;
       results = parent;
 
       let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
@@ -149,8 +145,30 @@ export class PostService {
 
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
-    return `This action updates a #${id} post`;
+  async update(id: number, updatePostDto: UpdatePostDto) {
+    let response: IResponse;
+    try {
+      const results = await this.postRepository.update(id, updatePostDto);
+
+      console.log(results);
+      
+      response = {
+        error: false,
+        results: updatePostDto,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+
+      console.log(error);
+      
+      throw new BadRequestException(response)
+    }
   }
 
   remove(id: number) {

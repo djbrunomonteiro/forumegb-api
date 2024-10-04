@@ -17,9 +17,9 @@ export class PostController {
     return this.postService.findAll(start, limit);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postService.findOne(+id);
+  @Get('search')
+  findOne(@Query('slug') slug: string) {
+    return this.postService.findOne(slug);
   }
 
   @Patch(':id')

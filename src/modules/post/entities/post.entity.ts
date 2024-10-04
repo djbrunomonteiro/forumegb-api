@@ -13,17 +13,17 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
     body: string;
     @Column({ nullable: true, default: '' })
     music_preview: string;
-    @Column({ nullable: true })
+    @Column({ nullable: true, default: '' })
     source_url: string | null;
-    @Column({ default: '' })
+    @Column({ nullable: true, default: '' })
     thumbnail: string;
-    @Column({ default: '' })
+    @Column({ nullable: true, default: '' })
     slug: string;
-    @Column({ nullable: false })
+    @Column({ nullable: true})
     owner_id: number;
     @Column({ default: '' })
     owner_username: string;
-    @Column({ default: '' })
+    @Column({ nullable: true})
     metadata: string;
     @Column({ default: EStatusPost.PUBLISHED })
     status: string;
