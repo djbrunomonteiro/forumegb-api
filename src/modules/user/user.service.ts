@@ -61,8 +61,25 @@ export class UserService {
     return `This action returns all user`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(email: string) {
+    let response: IResponse;
+    try {
+      
+      const results = await this.userRepository.findOneBy({email});
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      return response;
+    }
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
