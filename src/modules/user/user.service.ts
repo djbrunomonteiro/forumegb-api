@@ -15,7 +15,6 @@ export class UserService {
   ) {}
 
   async isNew(email: string) {
-     console.log(email);
     let response: IResponse;
     try {
       const results = await this.userRepository.find({ where: { email } });

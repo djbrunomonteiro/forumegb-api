@@ -5,7 +5,7 @@ import { PostEntity } from './entities/post.entity';
 import { Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
-import { firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
+import { concatMap, firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
 
 @Injectable()
 export class PostService {
@@ -15,11 +15,19 @@ export class PostService {
     private postRepository: Repository<PostEntity>,
   ) {}
   
-  async create(createPostDto: CreatePostDto) {
+  async create(createPostDto: CreatePostDto, fatherId?: string) {
     let response: IResponse;
     try {
       delete createPostDto.id;
-      const results = await this.postRepository.save(createPostDto);
+      let results = await this.postRepository.save(createPostDto);
+
+      if(fatherId){
+        const resQuery = await this.findOne(fatherId);
+        if(!resQuery.error){
+          results = resQuery.results;
+        }
+      }
+
       response = {
         error: false,
         results,
@@ -40,8 +48,6 @@ export class PostService {
     let response: IResponse;
     try {
       let results = await this.getPostsWithChildren(start, limit);
-      console.log(results);
-      
       results = this.sortById(results)
 
       response = {
@@ -97,7 +103,7 @@ export class PostService {
   // Função recursiva para buscar os filhos
   getChildren(posts: CreatePostDto[], parentId: number): Observable<CreatePostDto[]> {
     return from(posts).pipe(
-      mergeMap(post => {
+      concatMap(post => {
         return this.postRepository.find({ where: { parent_id: post.id } }).then(async children => {
           if (!children.length) {
             return post;
@@ -111,12 +117,14 @@ export class PostService {
     )
   }
 
-  async findOne(slug: string) {
+  async findOne(param: string) {
 
     let response: IResponse;
     let results;
     try {
-      let parent = await this.postRepository.findOneBy({slug}) as CreatePostDto;
+
+      const query = isNaN(+param) ? {slug: param} : {id: +param};
+      let parent = await this.postRepository.findOneBy(query) as CreatePostDto;
       results = parent;
 
       let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
@@ -149,9 +157,6 @@ export class PostService {
     let response: IResponse;
     try {
       const results = await this.postRepository.update(id, updatePostDto);
-
-      console.log(results);
-      
       response = {
         error: false,
         results: updatePostDto,
