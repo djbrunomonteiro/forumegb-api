@@ -30,6 +30,8 @@ export class UserController {
   @UseGuards(AuthGuard)
   @Get('search')
   findOne(@Query('email') email: string) {
+    console.log(email);
+    
     return this.userService.findOne(email);
   }
 

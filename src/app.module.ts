@@ -6,6 +6,22 @@ import { ConfigModule } from '@nestjs/config';
 import { UserModule } from './modules/user/user.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PostModule } from './modules/post/post.module';
+import { PreviewModule } from './modules/preview/preview.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+
+import { existsSync, mkdirSync } from 'fs';
+const uploadDir = join(__dirname, '../uploads');
+
+
+
+
+if (!existsSync(uploadDir)) {
+  mkdirSync(uploadDir);
+}
 
 @Module({
   imports: [
@@ -25,9 +41,28 @@ import { PostModule } from './modules/post/post.module';
     }),
     UserModule,
     JwtModule,
-    PostModule
+    PostModule,
+    PreviewModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..'),
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useValue: FileInterceptor('file', {
+        storage: diskStorage({
+          destination: uploadDir, // Use a variável uploadDir
+          filename: (req, file, cb) => {
+            const fileName = `${Date.now()}-${file.originalname}`;
+            console.log(uploadDir);
+            cb(null, fileName);
+          },
+        }),
+      }),
+    },
+  ],
 })
 export class AppModule {}
