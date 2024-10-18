@@ -17,8 +17,6 @@ export class AuthGuard implements CanActivate {
     try {
       // Decodifica o token sem verificar a validade
       const decoded = this.jwtService.decode(token);
-      console.log(decoded);
-      
       return decoded?.iss === process.env.ISS_GOOGLEPROVIDER; // Retorna as propriedades do token
     } catch (error) {
       throw new Error('Token inválido');

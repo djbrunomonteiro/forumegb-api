@@ -1,11 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
 import ffmpegStatic from 'ffmpeg-static';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { rejects } from 'assert';
-import { Readable } from 'stream';
+import { PassThrough, Readable } from 'stream';
 import { IResponse } from 'src/utils/interfaces/response';
 
 
@@ -59,16 +59,21 @@ export class PreviewService {
         fields: 'id',
       });
 
+      const fileId = resUpload?.data.id;
+      await this.drive.permissions.create({
+        fileId,
+        requestBody: {
+          role: 'reader',  // Define o papel como 'leitor'
+          type: 'anyone',  // Permite o acesso a qualquer um com o link
+        },
+      });
+
       console.log(resUpload);
+      const music_preview = fileId
       
       this.removeLocalePreview([inputPath,outputPath]);
-      response = {error: false, results: resUpload?.data, message: 'operação realizada com sucesso!'};
-
+      response = {error: false, results: {fileId, music_preview}, message: 'operação realizada com sucesso!'};
       return response;
-
-  
-
-      
     } catch (error) {
       response = {error: true, results: error, message: 'ocorreu um error ao processar operação!'}
       throw new BadRequestException(response);
@@ -162,6 +167,28 @@ export class PreviewService {
     return name
       .replace(/\s+/g, '_') // Substitui todos os espaços por '_'
       .toLowerCase();       // Converte para letras minúsculas
+  }
+
+  async getOne(fileId: string){
+
+    let response: IResponse;
+
+    try {
+      const resFile = await this.drive.files.get({
+        fileId,
+        alt: 'media', // Para obter o conteúdo do arquivo
+      }, {
+          responseType: 'stream', // Obtém o arquivo como um stream
+      });
+
+      return resFile.data;
+      
+    } catch (error) {
+      response = {error: true, results: undefined , message: 'Ocorreu um error ao obter preview!'}
+      throw new BadRequestException(response);
+    }
+
+
   }
 
 

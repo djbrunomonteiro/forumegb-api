@@ -44,6 +44,32 @@ export class PostService {
     }
   }
 
+  async recordsTotal(){
+    let response: IResponse;
+    try {
+      const recordsTotal = await this.postRepository
+        .createQueryBuilder('post')
+        .where('post.parent_id IS NULL')
+        .getCount();
+
+      response = {
+        error: false,
+        results: {recordsTotal},
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+      
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      return response;
+    }
+
+  }
+
   async findAll(start = 1, limit = 50) {
     let response: IResponse;
     try {

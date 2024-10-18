@@ -57,7 +57,6 @@ if (!existsSync(uploadDir)) {
           destination: uploadDir, // Use a variável uploadDir
           filename: (req, file, cb) => {
             const fileName = `${Date.now()}-${file.originalname}`;
-            console.log(uploadDir);
             cb(null, fileName);
           },
         }),

@@ -17,6 +17,11 @@ export class PostController {
     return this.postService.findAll(start, limit);
   }
 
+  @Get('total')
+  recordsTotal() {
+    return this.postService.recordsTotal();
+  }
+
   @Get('search')
   findOne(@Query('slug') slug: string) {
     return this.postService.findOne(slug);
