@@ -25,6 +25,7 @@ export class CreatePostDto {
     status?: string;
     parent_id?: number | null;
     children?: any;
+    type_stage?: string;
     @IsString()
     likes?: any;
     @IsString()

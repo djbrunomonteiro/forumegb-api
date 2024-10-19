@@ -1,4 +1,4 @@
-import { EStatusPost } from "src/utils/enums/enums";
+import { EStatusPost, ETypeStage } from "src/utils/enums/enums";
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({
@@ -29,6 +29,8 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
     status: string;
     @Column({ nullable: true })
     parent_id: number;
+    @Column({ nullable: true })
+    type_stage: string;
     @Column({ type: 'text', default: "[]"})
     likes: string;
     @CreateDateColumn()

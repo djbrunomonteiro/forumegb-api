@@ -11,3 +11,9 @@ export enum EStatusPost {
   ARCHIVED = 'ARCHIVED',
   DELETED = 'DELETED'
 }
+
+export enum ETypeStage{
+  MAINSTAGE  = 'MAINSTAGE',
+  FLOORSTAGE = 'FLOORSTAGE',
+  BACKSTAGE = 'BACKSTAGE',
+}
