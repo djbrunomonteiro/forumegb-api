@@ -1,3 +1,4 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -10,6 +11,13 @@ export class PostController {
   @Post()
   create(@Body() createPostDto: CreatePostDto, @Query('father') fatherId) {
     return this.postService.create(createPostDto, fatherId);
+  }
+
+  @Post('like')
+  like(@Body() body: any) {
+    const idPost = body?.idPost;
+    const idUser = body?.idUser
+    return this.postService.like(idPost, idUser);
   }
 
   @Get()

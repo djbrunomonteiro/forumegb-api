@@ -29,6 +29,8 @@ import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateCol
     status: string;
     @Column({ nullable: true })
     parent_id: number;
+    @Column({ type: 'text', default: "[]"})
+    likes: string;
     @CreateDateColumn()
     created_at: string;
     @UpdateDateColumn()

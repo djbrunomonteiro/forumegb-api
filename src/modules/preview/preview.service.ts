@@ -128,6 +128,7 @@ export class PreviewService {
     ffmpeg(filePath)
       .setStartTime(start)
       .setDuration(end - start)
+      .audioBitrate(128)
       .output(outputPath)
       .on('end', async () => {
         const readStream = fs.createReadStream(outputPath);

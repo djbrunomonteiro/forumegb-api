@@ -26,6 +26,8 @@ export class CreatePostDto {
     parent_id?: number | null;
     children?: any;
     @IsString()
+    likes?: any;
+    @IsString()
     created_at?: string;
     @IsString()
     updated_at?: string;

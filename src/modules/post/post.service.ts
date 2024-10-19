@@ -7,13 +7,78 @@ import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import { concatMap, firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
 
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+
+
+
 @Injectable()
 export class PostService {
 
   constructor(
     @InjectRepository(PostEntity)
     private postRepository: Repository<PostEntity>,
-  ) {}
+  ) {
+    dayjs.extend(utc);
+    dayjs.extend(timezone);
+  }
+
+  async like(idPost: any, idUser: any){
+    let response: IResponse;
+
+    try {
+      if(!idPost || !idUser){
+        throw new BadRequestException('idPost | idUser undefined')
+      }
+
+      const postRef = await this.postRepository.findOne({where: {id: +idPost}});
+
+      if(!postRef){
+        throw new BadRequestException('postRef undefined')
+      }
+
+      const date = dayjs().tz('America/Sao_Paulo').format();
+
+      let likeItem = {id_user: +idUser, date}
+      let likes = [];
+      likes = JSON.parse(postRef.likes) as any[] ?? [];
+
+      if(postRef.likes){
+        const indexRef = likes.findIndex(elem => +elem.id_user === likeItem.id_user);
+        if(indexRef === -1){
+          likes.push(likeItem)
+        }else{
+          likes.splice(indexRef, 1);
+        }
+
+      }else{
+        likes.push(likeItem)
+      }
+
+      await this.postRepository.update(postRef.id, {likes: JSON.stringify(likes)});
+
+      const results = {...postRef, likes}
+
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+
+      return response
+
+
+    } catch (error) {
+        response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response)
+    }
+
+  }
   
   async create(createPostDto: CreatePostDto, fatherId?: string) {
     let response: IResponse;
