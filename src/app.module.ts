@@ -14,6 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 
 import { existsSync, mkdirSync } from 'fs';
+import { PaymentModule } from './modules/payment/payment.module';
 const uploadDir = join(__dirname, '../uploads');
 
 
@@ -46,6 +47,7 @@ if (!existsSync(uploadDir)) {
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..'),
     }),
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [
