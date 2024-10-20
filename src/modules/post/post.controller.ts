@@ -21,10 +21,13 @@ export class PostController {
   }
 
   @Get()
-  findAll(@Query('start') start: number, @Query('limit') limit: number) {
-    return this.postService.findAll(start, limit);
+  findAll(@Query('type') type: string, @Query('start') start: number, @Query('limit') limit: number, @Query('order') order: string) {
+    console.log(type, start, limit);
+    
+    return this.postService.findAll(type, start, limit, order);
   }
 
+  
   @Get('total')
   recordsTotal() {
     return this.postService.recordsTotal();

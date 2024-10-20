@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import { concatMap, firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
+import { ETypeStage } from 'src/utils/enums/enums';
 
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
@@ -135,12 +136,11 @@ export class PostService {
 
   }
 
-  async findAll(start = 1, limit = 50) {
+  async findAll(type = '', start = 1, limit = 50, typeOrder = 'recentes') {
     let response: IResponse;
     try {
-      let results = await this.getPostsWithChildren(start, limit);
+      let results = await this.getPostsWithChildren(type, start, limit, typeOrder);
       results = this.sortById(results)
-
       response = {
         error: false,
         results,
@@ -153,7 +153,7 @@ export class PostService {
         results: error?.message,
         message: 'falha ao realizar operação',
       };
-      return response;
+      throw new BadRequestException(response)
     }
 
   }
@@ -162,31 +162,63 @@ export class PostService {
     return posts.sort((a, b) => a.id - b.id);
   }
 
-  async getPostsWithChildren(start = 1, limit = 50) {
-    // Primeiro, busca os posts pais
-    let parents = await this.postRepository.createQueryBuilder('post')
-    .where('post.parent_id IS NULL')
-    .orderBy('post.id', 'DESC')  // Ordena pelos itens mais recentes
-    .limit(limit)                     // Limita ao número de itens por página
-    .offset((start - 1) * limit) 
-    .getMany() as CreatePostDto[];
-    
-    const results$ = from(parents).pipe(
-      mergeMap(async parent => {
-      let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
+  async getPostsWithChildren(type = '', start = 1, limit = 50, typeOrder = 'recentes') {
+    start = Math.max(1, start); 
+    let where;
+    let sort;
+    let order;
+    if (type in ETypeStage) {
+      where = `post.parent_id IS NULL and post.type_stage = '${type}'`;
+    } else {
+      where = 'post.parent_id IS NULL' 
+    }
 
-      if(!children.length){
-        return parent
-      }
+    if(order === 'relevantes'){
+      sort = 'JSON_LENGTH(post.likes)';
+      order = 'DESC'
+    }else{
+      sort = 'post.id';
+      order = 'DESC'
+    }
 
-      children = await firstValueFrom(this.getChildren(children, parent.id)) 
-      return {...parent, children}
-      }),
-      toArray()
-  )
+    try {
+
+      // Primeiro, busca os posts pais
+      let parents = await this.postRepository.createQueryBuilder('post')
+      .where(where)
+      .orderBy(sort, order)  // Ordena pelos itens mais recentes
+      .limit(limit)                     // Limita ao número de itens por página
+      .offset((start - 1) * limit) 
+      .getMany() as CreatePostDto[];
 
 
-    return firstValueFrom(results$)
+      console.log(parents);
+      
+      
+      const results$ = from(parents).pipe(
+        mergeMap(async parent => {
+        let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
+
+        if(!children.length){
+          return parent
+        }
+
+        children = await firstValueFrom(this.getChildren(children, parent.id)) 
+        return {...parent, children}
+        }),
+        toArray()
+      )
+
+
+      return firstValueFrom(results$)
+      
+    } catch (error) {
+      console.log(error);
+      
+      throw new BadRequestException(error)
+    }
+
+
 
   }
   
