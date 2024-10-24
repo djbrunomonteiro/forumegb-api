@@ -22,8 +22,6 @@ export class PostController {
 
   @Get()
   findAll(@Query('type') type: string, @Query('start') start: number, @Query('limit') limit: number, @Query('order') order: string) {
-    console.log(type, start, limit);
-    
     return this.postService.findAll(type, start, limit, order);
   }
 

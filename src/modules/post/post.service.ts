@@ -7,6 +7,7 @@ import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import { concatMap, firstValueFrom, from, mergeMap, Observable, toArray } from 'rxjs';
 import { ETypeStage } from 'src/utils/enums/enums';
+import { UserService } from '../user/user.service';
 
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
@@ -20,6 +21,7 @@ export class PostService {
   constructor(
     @InjectRepository(PostEntity)
     private postRepository: Repository<PostEntity>,
+    private userService: UserService,
   ) {
     dayjs.extend(utc);
     dayjs.extend(timezone);
@@ -85,8 +87,16 @@ export class PostService {
     let response: IResponse;
     try {
       delete createPostDto.id;
-      let results = await this.postRepository.save(createPostDto);
 
+      // Obter o usuário
+      const user = await this.userService.findOneById(createPostDto.owner_id);
+      if (!user) {
+          throw new BadRequestException('Usuário não encontrado.');
+      }
+
+
+      let results = await this.postRepository.save({...createPostDto, user});
+ 
       if(fatherId){
         const resQuery = await this.findOne(fatherId);
         if(!resQuery.error){
@@ -185,19 +195,32 @@ export class PostService {
 
       // Primeiro, busca os posts pais
       let parents = await this.postRepository.createQueryBuilder('post')
+      .leftJoinAndSelect('post.user', 'users')  // Join com a tabela users utilizando owner_id
       .where(where)
       .orderBy(sort, order)  // Ordena pelos itens mais recentes
-      .limit(limit)                     // Limita ao número de itens por página
+      .limit(limit)          // Limita ao número de itens por página
       .offset((start - 1) * limit) 
+      .select([
+          'post',                  // Seleciona todos os campos do post
+          'users.photoURL',        // Corrige o alias para 'users'
+          'users.social_links',     // Corrige o alias para 'users'
+          'users.permission',       // Corrige o alias para 'users'
+      ])
       .getMany() as CreatePostDto[];
 
 
-      console.log(parents);
-      
-      
       const results$ = from(parents).pipe(
         mergeMap(async parent => {
-        let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
+          let children = await this.postRepository.createQueryBuilder('post')
+          .leftJoinAndSelect('post.user', 'users')  // Faz o join com a tabela de usuários
+          .where('post.parent_id = :parentId', { parentId: parent.id })
+          .select([
+              'post',                  // Seleciona todos os campos do post
+              'users.photoURL',        // Corrigido para usar o alias 'users'
+              'users.social_links',     // Corrigido para usar o alias 'users'
+              'users.permission',       // Corrigido para usar o alias 'users'
+          ])
+          .getMany() as CreatePostDto[];
 
         if(!children.length){
           return parent
@@ -226,55 +249,94 @@ export class PostService {
   // Função recursiva para buscar os filhos
   getChildren(posts: CreatePostDto[], parentId: number): Observable<CreatePostDto[]> {
     return from(posts).pipe(
-      concatMap(post => {
-        return this.postRepository.find({ where: { parent_id: post.id } }).then(async children => {
-          if (!children.length) {
-            return post;
-          }
-          // Busca recursivamente os filhos do filho
-          const grandChildren = await firstValueFrom(this.getChildren(children, post.id))
-          return {...post, children: grandChildren};
-        });
-      }),
-      toArray()
-    )
+        concatMap(post => {
+            return this.postRepository.createQueryBuilder('post')
+                .leftJoinAndSelect('post.user', 'user') // Faz o join com a tabela de usuários
+                .where('post.parent_id = :parentId', { parentId: post.id })
+                .select([
+                    'post',                  // Seleciona todos os campos do post
+                    'user.displayName',        
+                    'user.photoURL',        // Seleciona a imagem do usuário
+                    'user.social_links',     // Seleciona os links sociais do usuário
+                    'user.permission',       // Seleciona a permissão do usuário
+                ])
+                .getMany()
+                .then(async children => {
+                    if (!children.length) {
+                        return post;
+                    }
+                    // Busca recursivamente os filhos do filho
+                    const grandChildren = await firstValueFrom(this.getChildren(children, post.id));
+                    return { ...post, children: grandChildren };
+                });
+        }),
+        toArray()
+    );
   }
 
-  async findOne(param: string) {
 
+  async findOne(param: string): Promise<IResponse> {
     let response: IResponse;
     let results;
+    
     try {
+        const query = isNaN(+param) ? { slug: param } : { id: +param };
 
-      const query = isNaN(+param) ? {slug: param} : {id: +param};
-      let parent = await this.postRepository.findOneBy(query) as CreatePostDto;
-      results = parent;
+        // Usa o QueryBuilder para buscar o post e o usuário associado
+        const parent = await this.postRepository.createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user') // Faz o join com a tabela de usuários
+            .where(query)
+            .select([
+                'post',                  // Seleciona todos os campos do post
+                'user.displayName',        
+                'user.photoURL',        // Seleciona a imagem do usuário
+                'user.social_links',     // Seleciona os links sociais do usuário
+                'user.permission',       // Seleciona a permissão do usuário
+            ])
+            .getOne() as CreatePostDto;
 
-      let children = await this.postRepository.find({ where: { parent_id: parent.id } }) as CreatePostDto[];
+        if (!parent) {
+            throw new Error('Post não encontrado');
+        }
 
-      if(children.length){
-        children = await firstValueFrom(this.getChildren(children, parent.id)) 
-        results = {...parent, children}
-      }
-  
-      response = {
-        error: false,
-        results,
-        message: 'operação realizada com sucesso.',
-      };
-      return response;
+        results = parent;
+
+        // Busca os filhos usando QueryBuilder
+        let children = await this.postRepository.createQueryBuilder('post')
+            .leftJoinAndSelect('post.user', 'user') // Faz o join com a tabela de usuários
+            .where('post.parent_id = :parentId', { parentId: parent.id })
+            .select([
+                'post',
+                'user.displayName',        
+                'user.photoURL',        // Seleciona a imagem do usuário
+                'user.social_links',     // Seleciona os links sociais do usuário
+                'user.permission',       // Seleciona a permissão do usuário
+            ])
+            .getMany() as CreatePostDto[];
+
+        if (children.length) {
+            children = await firstValueFrom(this.getChildren(children, parent.id));
+            results = { ...parent, children };
+        }
+
+        response = {
+            error: false,
+            results,
+            message: 'Operação realizada com sucesso.',
+        };
+        
+        return response;
     } catch (error) {
-      response = {
-        error: true,
-        results: error?.message,
-        message: 'falha ao realizar operação',
-      };
-      return response;
+        response = {
+            error: true,
+            results: error?.message,
+            message: 'Falha ao realizar operação',
+        };
+        
+        return response;
     }
+}
 
-
-
-  }
 
   async update(id: number, updatePostDto: UpdatePostDto) {
     let response: IResponse;

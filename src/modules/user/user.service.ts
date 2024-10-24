@@ -60,6 +60,11 @@ export class UserService {
     return `This action returns all user`;
   }
 
+  async findOneById(id: number) {
+    return await this.userRepository.findOneBy({id});
+  }
+
+
   async findOne(email: string) {
     let response: IResponse;
     try {

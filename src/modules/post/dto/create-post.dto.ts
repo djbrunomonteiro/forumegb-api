@@ -1,35 +1,51 @@
-import { IsNumber, IsString } from "class-validator";
+import { IsNumber, IsString, IsOptional, IsArray } from "class-validator";
 
 export class CreatePostDto {
+    @IsOptional()  // Este campo não deve ser fornecido durante a criação
     @IsNumber()
     id?: number;
+
     @IsString()
     title: string;
+
     @IsString()
     body: string;
-    @IsString()
-    music_preview: string;
-    @IsString()
-    source_url?: string | null;
-    @IsString()
-    thumbnail?: string;
-    @IsString()
-    slug: string;
+
     @IsNumber()
     owner_id: number;
+
     @IsString()
-    owner_username: string;
+    @IsOptional()  // Pode ser opcional se não for fornecido
+    music_preview?: string;
+
     @IsString()
+    @IsOptional()  // Pode ser opcional
+    source_url?: string | null;
+
+    @IsString()
+    @IsOptional()  // Pode ser opcional
+    thumbnail?: string;
+
+    @IsString()
+    @IsOptional()  // Pode ser opcional
+    slug?: string;
+
+
+    @IsString()
+    @IsOptional()  // Pode ser opcional
     metadata?: string;
+
     @IsString()
+    @IsOptional()  // Pode ser opcional
     status?: string;
+
+    @IsOptional()  // Permite null
     parent_id?: number | null;
-    children?: any;
+
+    @IsOptional()  // Pode ser opcional
+    likes?: string;
+
+    @IsString()
+    @IsOptional()  // Pode ser opcional
     type_stage?: string;
-    @IsString()
-    likes?: any;
-    @IsString()
-    created_at?: string;
-    @IsString()
-    updated_at?: string;
 }

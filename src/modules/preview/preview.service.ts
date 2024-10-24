@@ -40,7 +40,7 @@ export class PreviewService {
       const fileMetadata = {
         name: customFileName, // Nome do arquivo
         mimeType: file.mimetype, // Tipo MIME do arquivo
-        parents: ['1HZ7N2VnlAFOcI4Uc4WTvoDKx4w-QvGAh'], // Adiciona a ID da pasta como pai
+        parents: ['1WN5KAiQH8tQssWu7gb7Z4bD3wDD8EyjQ'], // Adiciona a ID da pasta como pai
       };
 
       const fileStream = new Readable();
@@ -68,7 +68,6 @@ export class PreviewService {
         },
       });
 
-      console.log(resUpload);
       const music_preview = fileId
       
       this.removeLocalePreview([inputPath,outputPath]);
