@@ -28,6 +28,14 @@ export class CreateUserDto {
 
   @IsOptional()  // Pode ser opcional
   @IsString()
+  end_uf?: string;
+
+  @IsOptional()  // Pode ser opcional
+  @IsString()
+  end_city?: string;
+
+  @IsOptional()  // Pode ser opcional
+  @IsString()
   created_at?: string;
 
   @IsOptional()  // Pode ser opcional

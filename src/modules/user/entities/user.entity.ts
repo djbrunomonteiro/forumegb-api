@@ -34,6 +34,12 @@ export class UserEntity {
   @Column({ default: '' })
   metadata: string;
 
+  @Column({ default: '', nullable: true})
+  end_uf: string;
+
+  @Column({ default: '', nullable: true})
+  end_city: string;
+
   @CreateDateColumn()
   created_at: string;
 
