@@ -1,5 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -23,6 +22,11 @@ export class PostController {
   @Get()
   findAll(@Query('type') type: string, @Query('start') start: number, @Query('limit') limit: number, @Query('order') order: string) {
     return this.postService.findAll(type, start, limit, order);
+  }
+
+  @Get(':slug/author/:id')
+  isAuthor(@Param('slug') slug: string, @Param('id') id: string) {
+    return this.postService.isAuthor(slug, +id);
   }
 
   

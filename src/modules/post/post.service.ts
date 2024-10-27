@@ -364,4 +364,13 @@ export class PostService {
   remove(id: number) {
     return `This action removes a #${id} post`;
   }
+
+  async isAuthor(slug: string, owner_id: number){
+    const isOwner = await this.postRepository.existsBy({ slug, owner_id });
+    return {
+      error: false,
+      results: {isOwner},
+      message: isOwner ? 'Permitido para o author!' : 'Não permitido, você não é o author!',
+    };;
+  }
 }
