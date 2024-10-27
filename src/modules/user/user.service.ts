@@ -38,8 +38,9 @@ export class UserService {
     let response: IResponse;
     try {
       delete createUserDto.id;
+      delete createUserDto.permission;
       await this.userRepository.save(createUserDto);
-      const results = await this.userRepository.findBy({
+      const results = await this.userRepository.findOneBy({
         email: createUserDto.email,
       });
       response = {
@@ -89,6 +90,7 @@ export class UserService {
   async update(id: number, updateUserDto: UpdateUserDto) {
     let response: IResponse;
     try {
+      delete updateUserDto.permission;
       await this.userRepository.update(id, updateUserDto);
       const results = await this.userRepository.findOneBy({ id });
       response = {
