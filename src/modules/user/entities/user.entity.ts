@@ -28,7 +28,7 @@ export class UserEntity {
   @Column({ nullable: true })
   social_links: string;
 
-  @Column({ default: EPermission.NOOB })
+  @Column({ default: EPermission.BASIC_DJ })
   permission: string;
 
   @Column({ default: '', type: 'text' })
