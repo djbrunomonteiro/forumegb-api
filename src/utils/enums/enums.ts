@@ -1,8 +1,7 @@
 export enum EPermission {
-  NOOB = 'NOOBDJ',
-  DJ = 'DJ',
-  MASTERDJ = 'MASTERDJ',
-  ADMDJ = 'ADMDJ',
+  BASIC_DJ = 'BASIC_DJ',
+  ADVANCED_DJ = 'ADVANCED_DJ',
+  ADMIN_DJ = 'ADMIN_DJ'
 }
 
 
