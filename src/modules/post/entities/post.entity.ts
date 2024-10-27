@@ -1,6 +1,13 @@
-import { UserEntity } from "src/modules/user/entities/user.entity";
-import { EStatusPost, ETypeStage } from "src/utils/enums/enums";
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { UserEntity } from 'src/modules/user/entities/user.entity';
+import { EStatusPost } from 'src/utils/enums/enums';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({
   name: 'posts',
@@ -45,8 +52,11 @@ export class PostEntity {
   @Column({ nullable: true })
   type_stage: string;
 
-  @Column({ type: 'text', default: "[]" })
+  @Column({ type: 'text', default: '[]' })
   likes: string;
+
+  @Column({ type: 'text', default: '[]' })
+  tags: string;
 
   @CreateDateColumn()
   created_at: string;
@@ -54,6 +64,6 @@ export class PostEntity {
   @UpdateDateColumn()
   updated_at: string;
 
-  @ManyToOne(() => UserEntity, user => user.posts, { nullable: false })
+  @ManyToOne(() => UserEntity, (user) => user.posts, { nullable: false })
   user: UserEntity; // Relacionamento com o usuário
 }
