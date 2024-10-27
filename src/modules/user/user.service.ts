@@ -39,7 +39,9 @@ export class UserService {
     try {
       delete createUserDto.id;
       await this.userRepository.save(createUserDto);
-      const results = await this.userRepository.findBy({email: createUserDto.email})
+      const results = await this.userRepository.findBy({
+        email: createUserDto.email,
+      });
       response = {
         error: false,
         results,
@@ -61,15 +63,13 @@ export class UserService {
   }
 
   async findOneById(id: number) {
-    return await this.userRepository.findOneBy({id});
+    return await this.userRepository.findOneBy({ id });
   }
-
 
   async findOne(email: string) {
     let response: IResponse;
     try {
-      
-      const results = await this.userRepository.findOneBy({email});
+      const results = await this.userRepository.findOneBy({ email });
       response = {
         error: false,
         results,
@@ -86,8 +86,25 @@ export class UserService {
     }
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    let response: IResponse;
+    try {
+      await this.userRepository.update(id, updateUserDto);
+      const results = await this.userRepository.findOneBy({ id });
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      return response;
+    }
   }
 
   remove(id: number) {

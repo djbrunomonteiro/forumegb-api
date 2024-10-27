@@ -22,7 +22,7 @@ export class UserEntity {
   @Column({ nullable: false })
   email: string;
 
-  @Column({ default: '' })
+  @Column({ default: '', type: 'text' })
   photoURL: string;
 
   @Column({ nullable: true })
@@ -31,13 +31,13 @@ export class UserEntity {
   @Column({ default: EPermission.NOOB })
   permission: string;
 
-  @Column({ default: '' })
+  @Column({ default: '', type: 'text' })
   metadata: string;
 
-  @Column({ default: '', nullable: true})
+  @Column({ default: '', nullable: true })
   end_uf: string;
 
-  @Column({ default: '', nullable: true})
+  @Column({ default: '', nullable: true })
   end_city: string;
 
   @CreateDateColumn()
@@ -46,6 +46,6 @@ export class UserEntity {
   @UpdateDateColumn()
   updated_at: string;
 
-  @OneToMany(() => PostEntity, post => post.user)
+  @OneToMany(() => PostEntity, (post) => post.user)
   posts: PostEntity[];
 }
