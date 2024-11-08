@@ -8,8 +8,15 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentService.create(createPaymentDto);
+  create(@Body() body: any) {
+    const {plan_type, user_id, user_email} = body
+    return this.paymentService.create(+user_id, user_email, plan_type);
+  }
+
+  @Post('mercadopagohooks')
+  listenPayments(@Body() body: any) {
+    console.log('mercadopagohooks', body );
+    return this.paymentService.getWebHooks(body);
   }
 
   @Get()

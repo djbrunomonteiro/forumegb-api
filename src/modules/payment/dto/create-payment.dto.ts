@@ -5,49 +5,39 @@ export class CreatePaymentDto {
   @IsPositive()
   id: number; // Identificador único do pagamento
 
-  @IsNumber()
-  @IsPositive()
-  amount: number; // Valor do pagamento
-
-  @IsString()
-  @IsNotEmpty()
-  currency: string; // Moeda do pagamento (ex: 'USD', 'BRL')
-
-  @IsString()
-  @IsNotEmpty()
-  paymentMethod: string; // Método de pagamento (ex: 'credit_card', 'paypal')
-
-  @IsString()
   @IsNotEmpty()
   status: string; // Status do pagamento (ex: 'pending', 'completed', 'failed')
 
   @IsString()
   @IsNotEmpty()
-  transactionId: string; // ID da transação gerada pelo sistema de pagamento
+  transaction_id: string; // ID da transação gerada pelo sistema de pagamento
 
   @IsOptional()
   @IsNumber()
-  userId?: number; // ID do usuário que realizou o pagamento (se aplicável)
+  user_id?: number; // ID do usuário que realizou o pagamento (se aplicável)
+
+  @IsString()
+  plan_type: string;
+
+  @IsDate()
+  plan_start: string;
+
+  @IsDate()
+  plan_end: string; 
 
   @IsOptional()
   @IsString()
-  errorMessage?: string; // Mensagem de erro, caso o pagamento falhe
-
-  @IsDate()
-  accessStartDate: Date; // Data e hora de início do acesso
-
-  @IsDate()
-  accessEndDate: Date; // Data e hora de fim do acesso
+  preference?: string;
 
   @IsOptional()
   @IsString()
-  metadata?: string; // Mensagem de erro, caso o pagamento falhe
+  payload?: string;
 
   @IsDate()
-  createdAt: Date; // Data e hora em que o pagamento foi criado
+  createdAt: Date;
 
   @IsOptional()
   @IsDate()
-  updatedAt?: Date; // Data e hora da última atualização do pagamento (se aplicável)
+  updatedAt?: Date; 
 }
 

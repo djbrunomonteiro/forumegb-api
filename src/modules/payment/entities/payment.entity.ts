@@ -1,43 +1,38 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { EPlanStatus, EPlanTypes } from 'src/utils/enums/enums';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity('Payment')
 export class PaymentEntity {
   @PrimaryGeneratedColumn()
   id: number; // Identificador único do pagamento
 
-  @Column()
-  amount: number; // Valor do pagamento
-
-  @Column()
-  currency: string; // Moeda do pagamento (ex: 'USD', 'BRL')
-
-  @Column()
-  paymentMethod: string; // Método de pagamento (ex: 'credit_card', 'paypal')
-
-  @Column()
+  @Column({default: EPlanStatus.Pending})
   status: string; // Status do pagamento (ex: 'pending', 'completed', 'failed')
 
-  @Column()
-  transactionId: string; // ID da transação gerada pelo sistema de pagamento
+  @Column({nullable: true, default: ''})
+  transaction_id: string; // ID da transação gerada pelo sistema de pagamento
 
   @Column({ nullable: true })
-  userId?: number; // ID do usuário que realizou o pagamento (se aplicável)
+  user_id?: number; 
+
+  @Column({ nullable: true, default: EPlanTypes.TRIMESTRAL })
+  plan_type?: string; 
 
   @Column({ nullable: true })
-  errorMessage?: string; // Mensagem de erro, caso o pagamento falhe
-
-  @Column()
-  accessStartDate: Date; // Data e hora de início do acesso
-
-  @Column()
-  accessEndDate: Date; // Data e hora de fim do acesso
+  plan_start: string; // Data e hora de início do acesso
 
   @Column({ nullable: true })
-  metadata?: string; // Mensagem de erro, caso o pagamento falhe
+  plan_end: string; // Data e hora de fim do acesso
 
-  @Column()
-  createdAt: Date; // Data e hora em que o pagamento foi criado
+  @Column({ nullable: false, type: 'text', default: '' })
+  preference?: string;
 
-  @Column({ nullable: true })
-  updatedAt?: Date; // Data e hora da última atualização do pagamento (se aplicável)
+  @Column({ nullable: false, type: 'text', default: '' })
+  payload?: string;
+
+  @CreateDateColumn()
+  created_at: string;
+
+  @UpdateDateColumn()
+  updated_at: string;
 }

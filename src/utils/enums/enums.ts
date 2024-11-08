@@ -16,3 +16,17 @@ export enum ETypeStage{
   FLOORSTAGE = 'FLOORSTAGE',
   BACKSTAGE = 'BACKSTAGE',
 }
+
+export enum EPlanTypes {
+  TRIMESTRAL  = 'TRIMESTRAL',
+  SEMESTRAL = 'SEMESTRAL',
+  ANUAL = 'ANUAL',
+
+}
+
+export enum EPlanStatus {
+  Pending  = 'pending',
+  Approved = 'approved',
+  Rejected = 'rejected',
+  Cancelled = 'cancelled',
+}
