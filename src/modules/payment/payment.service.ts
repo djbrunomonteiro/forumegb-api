@@ -8,6 +8,7 @@ import { EPlanStatus, EPlanTypes } from 'src/utils/enums/enums';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
+import { firstValueFrom, from, mergeMap, toArray } from 'rxjs';
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
@@ -93,21 +94,41 @@ export class PaymentService {
 
     try {
 
-      const isPayments = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Approved }, order: { id: 'DESC' } });
-      const lastPayment = isPayments[0];
-
       let plan_start = dayjs().tz('America/Sao_Paulo').startOf('day').format('YYYY-MM-DD HH:mm:ss');
-      console.log(plan_start);
-
       let isFirstPlan = true;
+      let payment: Partial<CreatePaymentDto>;
 
+      console.log('user_id', user_id);
+      const isPendings = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Pending }, order: { id: 'DESC' } });
+      const lastPending = isPendings[0]
+ 
+      const paymentsApproved = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Approved }, order: { id: 'DESC' } });
+      const lastPayment = paymentsApproved[0];
       if (lastPayment) {
         plan_start = dayjs(lastPayment.plan_end).tz('America/Sao_Paulo').startOf('day').format('YYYY-MM-DD HH:mm:ss');
         isFirstPlan = false;
       }
       const plan_end = this.generatePlanEnd(plan_start, plan_type as EPlanTypes);
 
-      let payment: Partial<CreatePaymentDto> = {
+
+      //caso já exista só atualiza o periodo
+      if (lastPending && lastPending?.preference) {
+        await this.paymentRepository.update({ id: lastPending.id }, { plan_start, plan_end });
+
+        const parsePref = JSON.parse(lastPending.preference);
+        console.log('parse pref', parsePref);
+        
+        response = {
+          error: false,
+          results: { payment_id: lastPending.id, preference_id: parsePref?.id },
+          message: 'operação realizada com sucesso.',
+        }
+
+        return response
+      }
+
+      //segue o fluxo se não existir
+      payment = {
         user_id,
         plan_type,
         status: EPlanStatus.Pending,
@@ -164,8 +185,8 @@ export class PaymentService {
       const status = response?.status ?? EPlanStatus.Pending;
       const id = Number(response.external_reference);
 
-      const payload = JSON.stringify(response); 
-      await this.paymentRepository.update({id}, {status, transaction_id, payload});
+      const payload = JSON.stringify(response);
+      await this.paymentRepository.update({ id }, { status, transaction_id, payload });
       console.log('sucess webhooks', transaction_id);
       return 'webhook integracion success' + transaction_id
 
@@ -226,6 +247,56 @@ export class PaymentService {
 
   remove(id: number) {
     return `This action removes a #${id} payment`;
+  }
+
+  async syncPayment(user_id: number) {
+    let response: IResponse;
+    try {
+
+      const pendings = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Pending }, order: { id: 'DESC' } })
+      if (!pendings.length) {
+
+        response = {
+          error: false,
+          results: [],
+          message: 'Sem pagamentos pendentes.'
+        }
+
+        return response;
+      };
+
+      const clientPayment = new Payment(this.clientMercadoPago);
+
+      const submit$ = from(pendings).pipe(
+        mergeMap(async payment => {
+          const paymentMp = (await clientPayment.search({ options: { external_reference: String(payment.id) } })).results[0];
+          if (!paymentMp) { return undefined }
+          const status = paymentMp.status ?? payment.status;
+          const payload = JSON.stringify(paymentMp);
+          await this.paymentRepository.update({ id: payment.id }, { status, payload });
+          return { id: payment.id, status }
+        }),
+        toArray()
+      )
+
+      const results = (await firstValueFrom(submit$)).filter(elem => elem);
+      response = {
+        error: false,
+        results,
+        message: 'Pagamentos sincronizados com sucesso!'
+      }
+
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: undefined,
+        message: 'Ocorreu um erro ao sincronizar pagamentos!'
+      }
+      throw new BadRequestException(response)
+    }
+
+
   }
 
   private generatePlanEnd(plan_start: string, plan_type: EPlanTypes) {
