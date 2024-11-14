@@ -6,7 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import { IResponse } from 'src/utils/interfaces/response';
 import { EPlanStatus, EPlanTypes } from 'src/utils/enums/enums';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
+import { Between, ILike, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { firstValueFrom, from, mergeMap, toArray } from 'rxjs';
 const dayjs = require('dayjs');
@@ -302,11 +302,11 @@ export class PaymentService {
   private generatePlanEnd(plan_start: string, plan_type: EPlanTypes) {
     let plan_end;
     if (plan_type === EPlanTypes.TRIMESTRAL) {
-      plan_end = dayjs(plan_start).add(3, 'month').tz('America/Sao_Paulo').endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start).add(3, 'month').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
     } else if (plan_type === EPlanTypes.SEMESTRAL) {
-      plan_end = dayjs(plan_start).add(6, 'month').tz('America/Sao_Paulo').endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start).add(6, 'month').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
     } else {
-      plan_end = dayjs(plan_start).add(1, 'year').tz('America/Sao_Paulo').endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start).add(1, 'year').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
     }
     return plan_end
   }
@@ -325,5 +325,30 @@ export class PaymentService {
       items = this.optsItems.filter(plan => plan.id === '3');
     }
     return items
+  }
+
+  async getCurrentPaymentForUser(user_id: number){
+    let is_first = undefined;
+    let valid = undefined
+    let results = { valid, plan_type: '', plan_start: '', plan_end: '', is_first}
+    try {
+      const currentDay = dayjs().tz('America/Sao_Paulo').format('YYYY-MM-DD HH:mm:ss');
+
+      const payments = await  this.paymentRepository.find({where: {user_id, status: EPlanStatus.Approved, plan_end: MoreThanOrEqual(currentDay) }, order: {id: 'DESC'}});
+      const lastPayment = payments[0];
+      if(lastPayment){
+        const count = await  this.paymentRepository.count({where: {user_id, status: EPlanStatus.Approved}});
+        is_first = (count === 1);
+        valid = true
+
+      }
+      results = {valid, plan_type: lastPayment?.plan_type, plan_start: lastPayment?.plan_start, plan_end: lastPayment?.plan_end, is_first}
+      return  results
+      
+    } catch (error) {
+      return results;
+    }
+
+
   }
 }

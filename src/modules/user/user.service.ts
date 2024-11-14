@@ -6,12 +6,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserEntity } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
+import { PaymentService } from '../payment/payment.service';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
+    private paymentServie: PaymentService
   ) {}
 
   async isNew(email: string) {
@@ -70,10 +72,11 @@ export class UserService {
   async findOne(email: string) {
     let response: IResponse;
     try {
-      const results = await this.userRepository.findOneBy({ email });
+      const user = await this.userRepository.findOneBy({ email });
+      const plan = await this.paymentServie.getCurrentPaymentForUser(user.id);
       response = {
         error: false,
-        results,
+        results: {...user, plan: JSON.stringify(plan)},
         message: 'operação realizada com sucesso.',
       };
       return response;
