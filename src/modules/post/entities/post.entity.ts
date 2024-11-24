@@ -19,16 +19,16 @@ export class PostEntity {
   @Column({ nullable: false })
   title: string;
 
-  @Column({ nullable: false })
+  @Column({type: 'text', nullable: false })
   body: string;
 
-  @Column({ nullable: true, default: '' })
+  @Column({ nullable: true, default: '', type: 'text'})
   music_preview: string;
 
-  @Column({ nullable: true, default: '' })
+  @Column({ nullable: true, default: '', type: 'varchar', length: 1000 })
   source_url: string | null;
 
-  @Column({ nullable: true, default: '' })
+  @Column({ nullable: true, default: '', type: 'text' })
   thumbnail: string;
 
   @Column({ nullable: true, default: '' })
@@ -40,7 +40,7 @@ export class PostEntity {
   @Column({ nullable: true })
   owner_username: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'text' })
   metadata: string;
 
   @Column({ default: EStatusPost.PUBLISHED })

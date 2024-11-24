@@ -15,6 +15,10 @@ export class CreatePostDto {
   owner_id: number;
 
   @IsString()
+  @IsOptional()
+  owner_username?: string;
+
+  @IsString()
   @IsOptional() // Pode ser opcional se não for fornecido
   music_preview?: string;
 

@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtModule } from '@nestjs/jwt';
 import { PostEntity } from './entities/post.entity';
 import { UserModule } from '../user/user.module';
+import { PreviewModule } from '../preview/preview.module';
 
 @Module({
   controllers: [PostController],
@@ -12,7 +13,8 @@ import { UserModule } from '../user/user.module';
   imports: [
     TypeOrmModule.forFeature([PostEntity]),
     JwtModule,
-    UserModule
+    UserModule,
+    PreviewModule
   ]
 })
 export class PostModule {}

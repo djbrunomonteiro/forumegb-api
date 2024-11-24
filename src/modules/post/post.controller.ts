@@ -7,6 +7,17 @@ import { UpdatePostDto } from './dto/update-post.dto';
 export class PostController {
   constructor(private readonly postService: PostService) {}
 
+  @Post('generatefolderfromdrive')
+  generatePostFolder(@Query('folderId') folderId) {
+    return this.postService.generatePostsFolderFromDrive(folderId);
+  }
+
+  @Post('generatefilefromdrive')
+  generatePostFileForFolder(@Query('folderId') folderId) {
+    return this.postService.generatePostsFileFromDrive(folderId);
+  }
+
+
   @Post()
   create(@Body() createPostDto: CreatePostDto, @Query('father') fatherId) {
     return this.postService.create(createPostDto, fatherId);
@@ -22,6 +33,11 @@ export class PostController {
   @Get()
   findAll(@Query('type') type: string, @Query('start') start: number, @Query('limit') limit: number, @Query('order') order: string) {
     return this.postService.findAll(type, start, limit, order);
+  }
+
+  @Get('home')
+  resumeHome() {
+    return this.postService.resumeHome();
   }
 
   @Get(':slug/author/:id')

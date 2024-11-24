@@ -22,7 +22,7 @@ export class PreviewService {
   private initGoogleAPI() {
     const auth = new google.auth.GoogleAuth({
       credentials: JSON.parse(process.env.AGENT_GOOGLE),
-      scopes: ['https://www.googleapis.com/auth/drive.file'],
+      scopes: ['https://www.googleapis.com/auth/drive'],
     });
     this.drive = google.drive({ version: 'v3', auth });
   }
@@ -188,6 +188,28 @@ export class PreviewService {
       throw new BadRequestException(response);
     }
 
+
+  }
+
+
+   async listFolders(parentId: string){
+    const res = await this.drive.files.list({
+      q: `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
+      fields: 'files(id, name)',
+      pageSize: 100,
+    });
+
+    return {idFolder: parentId, data: res.data} ;
+
+  }
+
+  async listFilesInFolder(parentId: string){
+    const res = await this.drive.files.list({
+      q: `'${parentId}' in parents and mimeType = 'audio/mpeg'`,
+      fields: 'files(id, name, mimeType)',
+      pageSize: 100,
+    });
+    return {idFolder: parentId, data: res.data} ;
 
   }
 

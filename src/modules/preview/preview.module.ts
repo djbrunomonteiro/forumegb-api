@@ -5,5 +5,6 @@ import { PreviewController } from './preview.controller';
 @Module({
   controllers: [PreviewController],
   providers: [PreviewService],
+  exports: [PreviewService]
 })
 export class PreviewModule {}
