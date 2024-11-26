@@ -5,7 +5,7 @@ import { PostEntity } from './entities/post.entity';
 import { IsNull, Not, Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
-import { concatMap, firstValueFrom, from, mergeMap, Observable, throwError, toArray } from 'rxjs';
+import { concatMap, firstValueFrom, from, map, mergeMap, Observable, throwError, toArray } from 'rxjs';
 import { ETypeStage } from 'src/utils/enums/enums';
 import { UserService } from '../user/user.service';
 import { PreviewService } from '../preview/preview.service';
@@ -255,12 +255,13 @@ export class PostService {
     }
   }
 
-  async recordsTotal(){
+  async recordsTotal(type?: string){
     let response: IResponse;
     try {
+      const where = ETypeStage[type] ? `post.parent_id IS NULL AND post.type_stage = '${type}'` : 'post.parent_id IS NULL'
       const recordsTotal = await this.postRepository
         .createQueryBuilder('post')
-        .where('post.parent_id IS NULL')
+        .where(where)
         .getCount();
 
       response = {
@@ -284,8 +285,7 @@ export class PostService {
   async findAll(type = '', start = 1, limit = 200, typeOrder = 'recentes') {
     let response: IResponse;
     try {
-      let results = await this.getPostsWithChildren(type, start, limit, typeOrder);
-      results = this.sortById(results)
+      const results = await this.getPostsWithChildren(type, start, limit, typeOrder);
       response = {
         error: false,
         results,
@@ -351,24 +351,19 @@ export class PostService {
     return posts.sort((a, b) => a.id - b.id);
   }
 
-  async getPostsWithChildren(type = '', start = 1, limit = 50, typeOrder = 'recentes') {
-    start = Math.max(1, start); 
+  async getPostsWithChildren(type = '', start = 0, limit = 50, typeOrder = 'recentes') {
+
     let where;
     let sort;
     let order;
     if (type in ETypeStage) {
-      where = `post.parent_id IS NULL and post.type_stage = '${type}'`;
+      where = `post.parent_id IS NULL AND post.type_stage = '${type}'`;
     } else {
       where = 'post.parent_id IS NULL' 
     }
 
-    if(order === 'relevantes'){
-      sort = 'JSON_LENGTH(post.likes)';
-      order = 'DESC'
-    }else{
-      sort = 'post.id';
-      order = 'DESC'
-    }
+    sort = 'post.created_at';
+    order = 'DESC'
 
     try {
 
@@ -378,7 +373,7 @@ export class PostService {
       .where(where)
       .orderBy(sort, order)  // Ordena pelos itens mais recentes
       .limit(limit)          // Limita ao número de itens por página
-      .offset((start - 1) * limit) 
+      .offset(start) 
       .select([
           'post',                  // Seleciona todos os campos do post
           'users.photoURL',        // Corrige o alias para 'users'
@@ -408,7 +403,8 @@ export class PostService {
         children = await firstValueFrom(this.getChildren(children, parent.id)) 
         return {...parent, children}
         }),
-        toArray()
+        toArray(),
+        map(items => items.sort((a, b) => b.id - a.id))
       )
 
 

@@ -47,8 +47,8 @@ export class PostController {
 
   
   @Get('total')
-  recordsTotal() {
-    return this.postService.recordsTotal();
+  recordsTotal(@Query('type') type?: string) {
+    return this.postService.recordsTotal(type);
   }
 
   @Get('search')
