@@ -46,8 +46,6 @@ export class PostService {
   interetor = 0;
 
   
-
-
   constructor(
     @InjectRepository(PostEntity)
     private postRepository: Repository<PostEntity>,

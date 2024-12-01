@@ -17,9 +17,6 @@ import { existsSync, mkdirSync } from 'fs';
 import { PaymentModule } from './modules/payment/payment.module';
 const uploadDir = join(__dirname, '../uploads');
 
-
-
-
 if (!existsSync(uploadDir)) {
   mkdirSync(uploadDir);
 }
