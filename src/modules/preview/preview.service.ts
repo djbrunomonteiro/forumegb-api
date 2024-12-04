@@ -1,13 +1,11 @@
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
-import ffmpegStatic from 'ffmpeg-static';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as ffmpeg from 'fluent-ffmpeg';
-import { rejects } from 'assert';
-import { PassThrough, Readable } from 'stream';
+import { Readable } from 'stream';
 import { IResponse } from 'src/utils/interfaces/response';
-
 
 @Injectable()
 export class PreviewService {
@@ -28,15 +26,19 @@ export class PreviewService {
   }
 
   async create(file: any, start = 0, end = 30) {
-
     let response: IResponse;
 
     try {
-      const [name,_] = String(file.originalname).split('.mp3') 
+      const [name, _] = String(file.originalname).split('.mp3');
       const customFileName = `${this.generateName(name ?? 'previewfile')}.mp3`;
 
       const inputPath = await this.setLocale(file, customFileName);
-      const {buffer, outputPath} = await this.cutFile(inputPath, customFileName, start, end);
+      const { buffer, outputPath } = await this.cutFile(
+        inputPath,
+        customFileName,
+        start,
+        end,
+      );
       const fileMetadata = {
         name: customFileName, // Nome do arquivo
         mimeType: file.mimetype, // Tipo MIME do arquivo
@@ -47,10 +49,9 @@ export class PreviewService {
       fileStream.push(buffer);
       fileStream.push(null);
 
-
       const media = {
         mimeType: 'audio/mpeg',
-        body: fileStream
+        body: fileStream,
       };
 
       const resUpload = await this.drive.files.create({
@@ -63,25 +64,31 @@ export class PreviewService {
       await this.drive.permissions.create({
         fileId,
         requestBody: {
-          role: 'reader',  // Define o papel como 'leitor'
-          type: 'anyone',  // Permite o acesso a qualquer um com o link
+          role: 'reader', // Define o papel como 'leitor'
+          type: 'anyone', // Permite o acesso a qualquer um com o link
         },
       });
 
-      const music_preview = fileId
-      
-      this.removeLocalePreview([inputPath,outputPath]);
-      response = {error: false, results: {fileId, music_preview}, message: 'operação realizada com sucesso!'};
+      const music_preview = fileId;
+
+      this.removeLocalePreview([inputPath, outputPath]);
+      response = {
+        error: false,
+        results: { fileId, music_preview },
+        message: 'operação realizada com sucesso!',
+      };
       return response;
     } catch (error) {
-      response = {error: true, results: error, message: 'ocorreu um error ao processar operação!'}
+      response = {
+        error: true,
+        results: error,
+        message: 'ocorreu um error ao processar operação!',
+      };
       throw new BadRequestException(response);
     }
   }
 
-
-  removeLocalePreview(paths: string[]){
-
+  removeLocalePreview(paths: string[]) {
     for (let index = 0; index < paths.length; index++) {
       const path = paths[index];
 
@@ -92,12 +99,10 @@ export class PreviewService {
         }
         console.log('Arquivo deletado com sucesso!');
       });
-      
     }
-
   }
 
-  setLocale(file: any, customFileName: string){
+  setLocale(file: any, customFileName: string) {
     return new Promise<string>((resolve, reject) => {
       const uploadsPath = path.join(process.cwd(), 'uploads');
 
@@ -106,57 +111,55 @@ export class PreviewService {
       ws.write(file.buffer, (err) => {
         if (err) {
           console.error('Error writing file:', err);
-          reject(undefined)
+          reject(undefined);
           return;
         }
         console.log(`File saved as ${filePath}`);
-        resolve(filePath)
+        resolve(filePath);
       });
-  
+
       // Finalize o WriteStream
       ws.end();
-
-    })
+    });
   }
 
-  cutFile(filePath: string, name: string, start = 0, end = 30){
-  const uploadsPath = path.join(process.cwd(), 'uploads');
-  const outputPath = path.join(uploadsPath, `preview-${name}.mp3`);
+  cutFile(filePath: string, name: string, start = 0, end = 30) {
+    const uploadsPath = path.join(process.cwd(), 'uploads');
+    const outputPath = path.join(uploadsPath, `preview-${name}.mp3`);
 
-  return new Promise<any>((resolve, reject) => {
-    ffmpeg(filePath)
-      .setStartTime(start)
-      .setDuration(end - start)
-      .audioBitrate(128)
-      .output(outputPath)
-      .on('end', async () => {
-        const readStream = fs.createReadStream(outputPath);
-        const buffer = await this.streamToBuffer(readStream)
-        resolve({buffer, outputPath})
-      })
-      .on('error', (err) => {
-        console.error(err);
-        reject(err);
-      })
-      .run();
-  });
-
+    return new Promise<any>((resolve, reject) => {
+      ffmpeg(filePath)
+        .setStartTime(start)
+        .setDuration(end - start)
+        .audioBitrate(128)
+        .output(outputPath)
+        .on('end', async () => {
+          const readStream = fs.createReadStream(outputPath);
+          const buffer = await this.streamToBuffer(readStream);
+          resolve({ buffer, outputPath });
+        })
+        .on('error', (err) => {
+          console.error(err);
+          reject(err);
+        })
+        .run();
+    });
   }
 
   streamToBuffer(readStream) {
     const chunks = [];
-  
+
     return new Promise((resolve, reject) => {
       readStream.on('data', (chunk) => {
         chunks.push(chunk);
       });
-  
+
       readStream.on('end', () => {
         // Cria um Buffer a partir dos chunks coletados
         const buffer = Buffer.concat(chunks);
         resolve(buffer);
       });
-  
+
       readStream.on('error', (err) => {
         reject(err);
       });
@@ -166,53 +169,50 @@ export class PreviewService {
   generateName(name: string, pre = '') {
     return name
       .replace(/\s+/g, '_') // Substitui todos os espaços por '_'
-      .toLowerCase();       // Converte para letras minúsculas
+      .toLowerCase(); // Converte para letras minúsculas
   }
 
-  async getOne(fileId: string){
-
+  async getOne(fileId: string) {
     let response: IResponse;
 
     try {
-      const resFile = await this.drive.files.get({
-        fileId,
-        alt: 'media', // Para obter o conteúdo do arquivo
-      }, {
+      const resFile = await this.drive.files.get(
+        {
+          fileId,
+          alt: 'media', // Para obter o conteúdo do arquivo
+        },
+        {
           responseType: 'stream', // Obtém o arquivo como um stream
-      });
+        },
+      );
 
       return resFile.data;
-      
     } catch (error) {
-      response = {error: true, results: undefined , message: 'Ocorreu um error ao obter preview!'}
+      response = {
+        error: true,
+        results: undefined,
+        message: 'Ocorreu um error ao obter preview!',
+      };
       throw new BadRequestException(response);
     }
-
-
   }
 
-
-   async listFolders(parentId: string){
+  async listFolders(parentId: string) {
     const res = await this.drive.files.list({
       q: `'${parentId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
       fields: 'files(id, name)',
       pageSize: 100,
     });
 
-    return {idFolder: parentId, data: res.data} ;
-
+    return { idFolder: parentId, data: res.data };
   }
 
-  async listFilesInFolder(parentId: string){
+  async listFilesInFolder(parentId: string) {
     const res = await this.drive.files.list({
       q: `'${parentId}' in parents and mimeType = 'audio/mpeg'`,
       fields: 'files(id, name, mimeType)',
       pageSize: 100,
     });
-    return {idFolder: parentId, data: res.data} ;
-
+    return { idFolder: parentId, data: res.data };
   }
-
-
-
 }

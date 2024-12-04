@@ -1,28 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Headers, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Headers,
+  BadRequestException,
+} from '@nestjs/common';
 import { PaymentService } from './payment.service';
-import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 
 @Controller('payment')
 export class PaymentController {
-  KEYWEBHOOK = ''
+  KEYWEBHOOK = '';
   constructor(
     private readonly paymentService: PaymentService,
     private configService: ConfigService,
   ) {
-    this.KEYWEBHOOK = this.configService.get<string>('KEYWEBHOOKMERCADOPAGO')
+    this.KEYWEBHOOK = this.configService.get<string>('KEYWEBHOOKMERCADOPAGO');
   }
 
   @Post()
   create(@Body() body: any) {
-    const {plan_type, user_id, user_email} = body
+    const { plan_type, user_id, user_email } = body;
     return this.paymentService.create(+user_id, user_email, plan_type);
   }
 
   @Post('mercadopagohooks')
-  listenPayments(@Body() body: any, @Headers('x-request-id') xReqId: string, @Headers('x-signature') xSignature: string) {
+  listenPayments(
+    @Body() body: any,
+    @Headers('x-request-id') xReqId: string,
+    @Headers('x-signature') xSignature: string,
+  ) {
     if (!xSignature) {
       throw new BadRequestException('Cabeçalho x-signature ausente');
     }

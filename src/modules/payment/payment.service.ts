@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
@@ -6,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { IResponse } from 'src/utils/interfaces/response';
 import { EPlanStatus, EPlanTypes } from 'src/utils/enums/enums';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, ILike, LessThan, MoreThanOrEqual, Repository } from 'typeorm';
+import { MoreThanOrEqual, Repository } from 'typeorm';
 import { PaymentEntity } from './entities/payment.entity';
 import { firstValueFrom, from, mergeMap, toArray } from 'rxjs';
 const dayjs = require('dayjs');
@@ -15,7 +17,6 @@ const timezone = require('dayjs/plugin/timezone');
 
 @Injectable()
 export class PaymentService {
-
   clientMercadoPago: MercadoPagoConfig | undefined;
 
   optsItems = [
@@ -25,7 +26,7 @@ export class PaymentService {
       quantity: 1,
       currency_id: 'BRL',
       unit_price: 15,
-      description: 'assinatura pré paga trimestral'
+      description: 'assinatura pré paga trimestral',
     },
     {
       id: '2',
@@ -33,7 +34,7 @@ export class PaymentService {
       quantity: 1,
       currency_id: 'BRL',
       unit_price: 60,
-      description: 'assinatura pré paga trimestral'
+      description: 'assinatura pré paga trimestral',
     },
     {
       id: '3',
@@ -41,7 +42,7 @@ export class PaymentService {
       quantity: 1,
       currency_id: 'BRL',
       unit_price: 120,
-      description: 'assinatura pré paga trimestral'
+      description: 'assinatura pré paga trimestral',
     },
   ];
 
@@ -53,78 +54,124 @@ export class PaymentService {
     dayjs.extend(utc);
     dayjs.extend(timezone);
 
-    const accessToken = this.configService.get<string>('MERCADOPAGO')
+    const accessToken = this.configService.get<string>('MERCADOPAGO');
     this.clientMercadoPago = new MercadoPagoConfig({ accessToken });
   }
 
-  setPreferenceMP(external_reference: string, email: string, plan_type: string = EPlanTypes.TRIMESTRAL, isFirstPlan = false) {
-
+  setPreferenceMP(
+    external_reference: string,
+    email: string,
+    plan_type: string = EPlanTypes.TRIMESTRAL,
+    isFirstPlan = false,
+  ) {
     const preference = new Preference(this.clientMercadoPago);
     const items = this.selectPlanPrice(plan_type, isFirstPlan);
 
     let response: IResponse;
-    return preference.create({
-      body: {
-        back_urls: {
-          success: 'https://egbhub.com.br/checkout/success',
-          failure: 'https://egbhub.com.br/checkout/failure',
-          pending: 'https://egbhub.com.br/checkout/pending'
+    return preference
+      .create({
+        body: {
+          back_urls: {
+            success: 'https://egbhub.com.br/checkout/success',
+            failure: 'https://egbhub.com.br/checkout/failure',
+            pending: 'https://egbhub.com.br/checkout/pending',
+          },
+          external_reference,
+          payer: { email },
+          payment_methods: {
+            excluded_payment_methods: [{ id: 'bolbradesco' }, { id: 'pec' }],
+          },
+          items,
         },
-        external_reference,
-        payer: { email },
-        payment_methods: {
-          excluded_payment_methods: [{ id: 'bolbradesco' }, { id: 'pec' }]
-        },
-        items
-      }
-    })
+      })
       .then((res) => {
-        response = { error: false, results: res, message: 'Operação realizada com sucesso!' }
-        return response
+        response = {
+          error: false,
+          results: res,
+          message: 'Operação realizada com sucesso!',
+        };
+        return response;
       })
       .catch(() => {
-        response = { error: true, results: undefined, message: 'Não foi possivel iniciar operação!' }
-        return response
+        response = {
+          error: true,
+          results: undefined,
+          message: 'Não foi possivel iniciar operação!',
+        };
+        return response;
       });
   }
 
-
-  async create(user_id: number, emailT: string, plan_type: string = EPlanTypes.TRIMESTRAL) {
+  async create(
+    user_id: number,
+    email: string,
+    plan_type: string = EPlanTypes.TRIMESTRAL,
+  ) {
     let response: IResponse;
+    email = 'test_user_1993749272@testuser.com';
 
     try {
-
-      let plan_start = dayjs().tz('America/Sao_Paulo').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+      let plan_start = dayjs()
+        .tz('America/Sao_Paulo')
+        .startOf('day')
+        .format('YYYY-MM-DD HH:mm:ss');
       let isFirstPlan = true;
       let payment: Partial<CreatePaymentDto>;
 
-      console.log('user_id', user_id);
-      const isPendings = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Pending }, order: { id: 'DESC' } });
-      const lastPending = isPendings[0]
- 
-      const paymentsApproved = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Approved }, order: { id: 'DESC' } });
+      const isPendings = await this.paymentRepository.find({
+        where: { user_id, status: EPlanStatus.Pending },
+        order: { id: 'DESC' },
+      });
+      const lastPending = isPendings[0];
+
+      const paymentsApproved = await this.paymentRepository.find({
+        where: { user_id, status: EPlanStatus.Approved },
+        order: { id: 'DESC' },
+      });
       const lastPayment = paymentsApproved[0];
       if (lastPayment) {
-        plan_start = dayjs(lastPayment.plan_end).tz('America/Sao_Paulo').startOf('day').format('YYYY-MM-DD HH:mm:ss');
+        plan_start = dayjs(lastPayment.plan_end)
+          .tz('America/Sao_Paulo')
+          .startOf('day')
+          .format('YYYY-MM-DD HH:mm:ss');
         isFirstPlan = false;
       }
-      const plan_end = this.generatePlanEnd(plan_start, plan_type as EPlanTypes);
-
+      const plan_end = this.generatePlanEnd(
+        plan_start,
+        plan_type as EPlanTypes,
+      );
 
       //caso já exista só atualiza o periodo
       if (lastPending && lastPending?.preference) {
-        await this.paymentRepository.update({ id: lastPending.id }, { plan_start, plan_end });
+        const resPref = await this.setPreferenceMP(
+          String(lastPending.id),
+          email,
+          plan_type,
+          isFirstPlan,
+        );
 
-        const parsePref = JSON.parse(lastPending.preference);
-        console.log('parse pref', parsePref);
-        
+        const newPreference = resPref.results;
+
+        await this.paymentRepository.update(
+          { id: lastPending.id },
+          {
+            plan_type,
+            plan_start,
+            plan_end,
+            preference: JSON.stringify(newPreference),
+          },
+        );
+
         response = {
           error: false,
-          results: { payment_id: lastPending.id, preference_id: parsePref?.id },
+          results: {
+            payment_id: lastPending.id,
+            preference_id: newPreference?.id,
+          },
           message: 'operação realizada com sucesso.',
-        }
+        };
 
-        return response
+        return response;
       }
 
       //segue o fluxo se não existir
@@ -134,14 +181,19 @@ export class PaymentService {
         status: EPlanStatus.Pending,
         plan_start,
         plan_end,
-        preference: ''
-      }
+        preference: '',
+      };
 
       payment = await this.paymentRepository.save(payment);
 
       const external_reference = String(payment.id);
-      const email = 'test_user_1993749272@testuser.com'
-      const resPref = await this.setPreferenceMP(external_reference, email, plan_type, isFirstPlan);
+      // const email = 'test_user_1993749272@testuser.com';
+      const resPref = await this.setPreferenceMP(
+        external_reference,
+        email,
+        plan_type,
+        isFirstPlan,
+      );
 
       if (resPref.error) {
         response = {
@@ -149,18 +201,18 @@ export class PaymentService {
           results: undefined,
           message: 'Falha ao realizar operação! tente novamente.',
         };
-        throw new BadRequestException(response)
+        throw new BadRequestException(response);
       }
 
       const preference = JSON.stringify(resPref.results);
-      payment = { ...payment, preference }
+      payment = { ...payment, preference };
       await this.paymentRepository.update(payment.id, payment);
 
       response = {
         error: false,
         results: { payment_id: payment.id, preference_id: resPref.results?.id },
         message: 'operação realizada com sucesso.',
-      }
+      };
       return response;
     } catch (error) {
       response = {
@@ -171,31 +223,30 @@ export class PaymentService {
 
       console.log(error);
 
-      throw new BadRequestException(response)
+      throw new BadRequestException(response);
     }
-
   }
 
   async getWebHooks(body: any) {
     const transaction_id = body?.data?.id;
     try {
-
       const payment = new Payment(this.clientMercadoPago);
       const response = await payment.get({ id: transaction_id });
       const status = response?.status ?? EPlanStatus.Pending;
       const id = Number(response.external_reference);
 
       const payload = JSON.stringify(response);
-      await this.paymentRepository.update({ id }, { status, transaction_id, payload });
+      await this.paymentRepository.update(
+        { id },
+        { status, transaction_id, payload },
+      );
       console.log('sucess webhooks', transaction_id);
-      return 'webhook integracion success' + transaction_id
-
+      return 'webhook integracion success' + transaction_id;
     } catch (error) {
       console.log('error webhooks', error);
-      return 'webhook integracion error'
+      return 'webhook integracion error';
     }
   }
-
 
   findAll() {
     return `This action returns all payment`;
@@ -209,8 +260,7 @@ export class PaymentService {
         error: false,
         results,
         message: 'operação realizada com sucesso.',
-      }
-
+      };
     } catch (error) {
       response = {
         error: true,
@@ -219,7 +269,7 @@ export class PaymentService {
       };
 
       console.log(error);
-      throw new BadRequestException(response)
+      throw new BadRequestException(response);
     }
   }
 
@@ -231,8 +281,7 @@ export class PaymentService {
         error: false,
         results: updatePaymentDto,
         message: 'operação realizada com sucesso.',
-      }
-
+      };
     } catch (error) {
       response = {
         error: true,
@@ -241,7 +290,7 @@ export class PaymentService {
       };
 
       console.log(error);
-      throw new BadRequestException(response)
+      throw new BadRequestException(response);
     }
   }
 
@@ -252,103 +301,148 @@ export class PaymentService {
   async syncPayment(user_id: number) {
     let response: IResponse;
     try {
+      const pendings = await this.paymentRepository.find({
+        where: { user_id, status: EPlanStatus.Pending },
+        order: { id: 'DESC' },
+      });
 
-      const pendings = await this.paymentRepository.find({ where: { user_id, status: EPlanStatus.Pending }, order: { id: 'DESC' } })
+
+      console.log(user_id);
+      
       if (!pendings.length) {
-
         response = {
           error: false,
           results: [],
-          message: 'Sem pagamentos pendentes.'
-        }
+          message: 'Sem pagamentos pendentes.',
+        };
 
         return response;
-      };
+      }
 
       const clientPayment = new Payment(this.clientMercadoPago);
 
       const submit$ = from(pendings).pipe(
-        mergeMap(async payment => {
-          const paymentMp = (await clientPayment.search({ options: { external_reference: String(payment.id) } })).results[0];
-          if (!paymentMp) { return undefined }
+        mergeMap(async (payment) => {
+          const paymentMp = (
+            await clientPayment.search({
+              options: { external_reference: String(payment.id) },
+            })
+          ).results[0];
+          if (!paymentMp) {
+            return undefined;
+          }
           const status = paymentMp.status ?? payment.status;
           const payload = JSON.stringify(paymentMp);
-          await this.paymentRepository.update({ id: payment.id }, { status, payload });
-          return { id: payment.id, status }
+          await this.paymentRepository.update(
+            { id: payment.id },
+            { status, payload },
+          );
+          return { id: payment.id, status };
         }),
-        toArray()
-      )
+        toArray(),
+      );
 
-      const results = (await firstValueFrom(submit$)).filter(elem => elem);
+      const results = (await firstValueFrom(submit$)).filter((elem) => elem);
       response = {
         error: false,
         results,
-        message: 'Pagamentos sincronizados com sucesso!'
-      }
+        message: 'Pagamentos sincronizados com sucesso!',
+      };
 
       return response;
     } catch (error) {
       response = {
         error: true,
         results: undefined,
-        message: 'Ocorreu um erro ao sincronizar pagamentos!'
-      }
-      throw new BadRequestException(response)
+        message: 'Ocorreu um erro ao sincronizar pagamentos!',
+      };
+      throw new BadRequestException(response);
     }
-
-
   }
 
   private generatePlanEnd(plan_start: string, plan_type: EPlanTypes) {
     let plan_end;
     if (plan_type === EPlanTypes.TRIMESTRAL) {
-      plan_end = dayjs(plan_start).add(3, 'month').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start)
+        .add(3, 'month')
+        .tz('America/Sao_Paulo', true)
+        .endOf('day')
+        .format('YYYY-MM-DD HH:mm:ss');
     } else if (plan_type === EPlanTypes.SEMESTRAL) {
-      plan_end = dayjs(plan_start).add(6, 'month').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start)
+        .add(6, 'month')
+        .tz('America/Sao_Paulo', true)
+        .endOf('day')
+        .format('YYYY-MM-DD HH:mm:ss');
     } else {
-      plan_end = dayjs(plan_start).add(1, 'year').tz('America/Sao_Paulo', true).endOf('day').format('YYYY-MM-DD HH:mm:ss');
+      plan_end = dayjs(plan_start)
+        .add(1, 'year')
+        .tz('America/Sao_Paulo', true)
+        .endOf('day')
+        .format('YYYY-MM-DD HH:mm:ss');
     }
-    return plan_end
+    return plan_end;
   }
 
   private selectPlanPrice(plan_type: string, isFirstPlan = false) {
     let items;
     if (plan_type === EPlanTypes.TRIMESTRAL) {
-      items = this.optsItems.filter(plan => plan.id === '1').map(elem => {
-        const unit_price = isFirstPlan ? elem.unit_price : 30;
-        return { ...elem, unit_price }
-      });
-
+      items = this.optsItems
+        .filter((plan) => plan.id === '1')
+        .map((elem) => {
+          const unit_price = isFirstPlan ? elem.unit_price : 30;
+          return { ...elem, unit_price };
+        });
     } else if (plan_type === EPlanTypes.SEMESTRAL) {
-      items = this.optsItems.filter(plan => plan.id === '2');
+      items = this.optsItems.filter((plan) => plan.id === '2');
     } else {
-      items = this.optsItems.filter(plan => plan.id === '3');
+      items = this.optsItems.filter((plan) => plan.id === '3');
     }
-    return items
+    return items;
   }
 
-  async getCurrentPaymentForUser(user_id: number){
+  async getCurrentPaymentForUser(user_id: number) {
+    await this.syncPayment(user_id);
     let is_first = undefined;
-    let valid = undefined
-    let results = { valid, plan_type: '', plan_start: '', plan_end: '', is_first}
+    let valid = undefined;
+    let results = {
+      valid,
+      plan_type: '',
+      plan_start: '',
+      plan_end: '',
+      is_first,
+    };
     try {
-      const currentDay = dayjs().tz('America/Sao_Paulo').format('YYYY-MM-DD HH:mm:ss');
+      const currentDay = dayjs()
+        .tz('America/Sao_Paulo')
+        .format('YYYY-MM-DD HH:mm:ss');
 
-      const payments = await  this.paymentRepository.find({where: {user_id, status: EPlanStatus.Approved, plan_end: MoreThanOrEqual(currentDay) }, order: {id: 'DESC'}});
+      const payments = await this.paymentRepository.find({
+        where: {
+          user_id,
+          status: EPlanStatus.Approved,
+          plan_end: MoreThanOrEqual(currentDay),
+        },
+        order: { id: 'DESC' },
+      });
       const lastPayment = payments[0];
-      if(lastPayment){
-        const count = await  this.paymentRepository.count({where: {user_id, status: EPlanStatus.Approved}});
-        is_first = (count === 1);
-        valid = true
-
+      if (lastPayment) {
+        const count = await this.paymentRepository.count({
+          where: { user_id, status: EPlanStatus.Approved },
+        });
+        is_first = count === 1;
+        valid = true;
       }
-      results = {valid, plan_type: lastPayment?.plan_type, plan_start: lastPayment?.plan_start, plan_end: lastPayment?.plan_end, is_first}
-      return  results
-      
+      results = {
+        valid,
+        plan_type: lastPayment?.plan_type,
+        plan_start: lastPayment?.plan_start,
+        plan_end: lastPayment?.plan_end,
+        is_first,
+      };
+      return results;
     } catch (error) {
       return results;
     }
-
-
   }
 }

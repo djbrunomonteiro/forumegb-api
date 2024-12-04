@@ -13,7 +13,7 @@ export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
-    private paymentServie: PaymentService
+    private paymentServie: PaymentService,
   ) {}
 
   async isNew(email: string) {
@@ -73,10 +73,11 @@ export class UserService {
     let response: IResponse;
     try {
       const user = await this.userRepository.findOneBy({ email });
+      
       const plan = await this.paymentServie.getCurrentPaymentForUser(user.id);
       response = {
         error: false,
-        results: {...user, plan: JSON.stringify(plan)},
+        results: { ...user, plan: JSON.stringify(plan) },
         message: 'operação realizada com sucesso.',
       };
       return response;
