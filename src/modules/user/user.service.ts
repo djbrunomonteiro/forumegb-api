@@ -42,9 +42,7 @@ export class UserService {
       delete createUserDto.id;
       delete createUserDto.permission;
       await this.userRepository.save(createUserDto);
-      const results = await this.userRepository.findOneBy({
-        email: createUserDto.email,
-      });
+      const { results } = await this.findOne(createUserDto.email);
       response = {
         error: false,
         results,
@@ -73,7 +71,6 @@ export class UserService {
     let response: IResponse;
     try {
       const user = await this.userRepository.findOneBy({ email });
-      
       const plan = await this.paymentServie.getCurrentPaymentForUser(user.id);
       response = {
         error: false,
@@ -96,7 +93,8 @@ export class UserService {
     try {
       delete updateUserDto.permission;
       await this.userRepository.update(id, updateUserDto);
-      const results = await this.userRepository.findOneBy({ id });
+      const userRef = await this.userRepository.findOneBy({ id });
+      const { results } = await this.findOne(userRef.email);
       response = {
         error: false,
         results,

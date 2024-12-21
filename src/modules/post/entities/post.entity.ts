@@ -19,10 +19,10 @@ export class PostEntity {
   @Column({ nullable: false })
   title: string;
 
-  @Column({type: 'text', nullable: false })
+  @Column({ type: 'text', nullable: false })
   body: string;
 
-  @Column({ nullable: true, default: '', type: 'text'})
+  @Column({ nullable: true, default: '', type: 'text' })
   music_preview: string;
 
   @Column({ nullable: true, default: '', type: 'varchar', length: 1000 })

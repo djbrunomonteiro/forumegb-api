@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -17,7 +26,6 @@ export class PostController {
     return this.postService.generatePostsFileFromDrive(folderId);
   }
 
-
   @Post()
   create(@Body() createPostDto: CreatePostDto, @Query('father') fatherId) {
     return this.postService.create(createPostDto, fatherId);
@@ -26,12 +34,17 @@ export class PostController {
   @Post('like')
   like(@Body() body: any) {
     const idPost = body?.idPost;
-    const idUser = body?.idUser
+    const idUser = body?.idUser;
     return this.postService.like(idPost, idUser);
   }
 
   @Get()
-  findAll(@Query('type') type: string, @Query('start') start: number, @Query('limit') limit: number, @Query('order') order: string) {
+  findAll(
+    @Query('type') type: string,
+    @Query('start') start: number,
+    @Query('limit') limit: number,
+    @Query('order') order: string,
+  ) {
     return this.postService.findAll(type, start, limit, order);
   }
 
@@ -45,7 +58,6 @@ export class PostController {
     return this.postService.isAuthor(slug, +id);
   }
 
-  
   @Get('total')
   recordsTotal(@Query('type') type?: string) {
     return this.postService.recordsTotal(type);
