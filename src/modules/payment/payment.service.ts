@@ -108,7 +108,6 @@ export class PaymentService {
     plan_type: string = EPlanTypes.TRIMESTRAL,
   ) {
     let response: IResponse;
-    email = 'test_user_1993749272@testuser.com';
 
     try {
       let plan_start = dayjs()
@@ -306,9 +305,6 @@ export class PaymentService {
         order: { id: 'DESC' },
       });
 
-
-      console.log(user_id);
-      
       if (!pendings.length) {
         response = {
           error: false,

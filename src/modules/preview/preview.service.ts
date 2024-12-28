@@ -114,7 +114,6 @@ export class PreviewService {
           reject(undefined);
           return;
         }
-        console.log(`File saved as ${filePath}`);
         resolve(filePath);
       });
 

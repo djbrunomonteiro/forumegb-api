@@ -77,4 +77,9 @@ export class PostController {
   remove(@Param('id') id: string) {
     return this.postService.remove(+id);
   }
+
+  @Get('fake')
+  fake() {
+    return this.postService.addRoboComment();
+  }
 }

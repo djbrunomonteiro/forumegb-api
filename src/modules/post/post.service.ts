@@ -330,8 +330,6 @@ export class PostService {
         return { ...post, source_url: '' };
       });
 
-      console.log(results);
-
       response = {
         error: false,
         results,
@@ -606,5 +604,44 @@ export class PostService {
         ? 'Permitido para o author!'
         : 'Não permitido, você não é o author!',
     };
+  }
+
+  async addRoboComment() {
+    const frases = [
+      'Bem legal.',
+      'Diferente...',
+      'Nao sabia que tinha',
+      'ouvindo',
+      'boa :)',
+      'dançante',
+      'vou divulgar',
+      'da de ouvir no treino',
+      'hurulll',
+      'v6 são d+',
+      'obg por compartilhar',
+    ];
+
+    return;
+
+    const resFindAll = await this.findAll(ETypeStage.FLOORSTAGE);
+
+    from(resFindAll.results)
+      .pipe(
+        mergeMap(async (post: any) => {
+          const fraseAleatoria =
+            frases[Math.floor(Math.random() * frases.length)];
+          const body = `<p>${fraseAleatoria}</p>`;
+
+          const createPostDto: CreatePostDto = {
+            title: '',
+            body,
+            owner_id: 5,
+            parent_id: post.id,
+          };
+
+          return await this.create(createPostDto);
+        }),
+      )
+      .subscribe();
   }
 }
