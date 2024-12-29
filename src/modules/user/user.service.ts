@@ -19,10 +19,11 @@ export class UserService {
   async isNew(email: string) {
     let response: IResponse;
     try {
-      const results = await this.userRepository.find({ where: { email } });
+      const { results } = await this.findOne(email);
+      const users = [results].filter((elem: any) => elem);
       response = {
         error: false,
-        results,
+        results: users,
         message: 'operação realizada com sucesso.',
       };
       return response;
