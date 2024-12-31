@@ -5,7 +5,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PostEntity } from './entities/post.entity';
-import { IsNull, Not, Repository } from 'typeorm';
+import { Brackets, IsNull, Not, Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { CreatePostDto } from './dto/create-post.dto';
 import {
@@ -62,6 +62,37 @@ export class PostService {
   ) {
     dayjs.extend(utc);
     dayjs.extend(timezone);
+  }
+
+  async search(stage: string, term: string) {
+    let response: IResponse;
+    try {
+      const results = await this.postRepository
+        .createQueryBuilder('post')
+        .where('post.type_stage = :typeStage', { typeStage: stage }) // Substitua pelo valor dinâmico
+        .andWhere(
+          new Brackets((qb) => {
+            qb.where('post.title LIKE :term', { term: `%${term}%` }) // Substitua pelo termo dinâmico
+              .orWhere('post.body LIKE :term', { term: `%${term}%` })
+              .orWhere('post.tags LIKE :term', { term: `%${term}%` });
+          }),
+        )
+        .getMany();
+
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
   }
 
   async generatePostsFolderFromDrive(folderId: string) {

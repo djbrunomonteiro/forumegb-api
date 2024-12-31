@@ -53,6 +53,11 @@ export class PostController {
     return this.postService.resumeHome();
   }
 
+  @Get('query')
+  search(@Query('type') type: string, @Query('term') term: string) {
+    return this.postService.search(type, term);
+  }
+
   @Get(':slug/author/:id')
   isAuthor(@Param('slug') slug: string, @Param('id') id: string) {
     return this.postService.isAuthor(slug, +id);
