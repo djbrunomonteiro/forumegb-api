@@ -320,17 +320,12 @@ export class PostService {
     }
   }
 
-  async recordsTotal(type?: string) {
+  async recordsTotal() {
     let response: IResponse;
     try {
-      const where = ETypeStage[type]
-        ? `post.parent_id IS NULL AND post.type_stage = '${type}'`
-        : 'post.parent_id IS NULL';
-      const recordsTotal = await this.postRepository
-        .createQueryBuilder('post')
-        .where(where)
-        .getCount();
-
+      const recordsTotal = await this.postRepository.count({
+        where: { parent_id: IsNull() },
+      });
       response = {
         error: false,
         results: { recordsTotal },
@@ -347,7 +342,7 @@ export class PostService {
     }
   }
 
-  async findAll(type = '', start = 1, limit = 200, typeOrder = 'recentes') {
+  async findAll(type = '', start = 1, limit = 20, typeOrder = 'recentes') {
     let response: IResponse;
     try {
       const posts = await this.getPostsWithChildren(
@@ -377,36 +372,80 @@ export class PostService {
     }
   }
 
-  async resumeHome() {
+  async resumeOne(slug: string) {
     let response: IResponse;
     try {
-      let types = [
-        ETypeStage.MAINSTAGE,
-        ETypeStage.FLOORSTAGE,
-        ETypeStage.BACKSTAGE,
-      ];
+      const parent = await this.postRepository.findOne({ where: { slug } });
+      const child_count = await this.postRepository.countBy({
+        parent_id: parent.id,
+      });
+      // const user = this.userService.findOne()
 
-      const groups$ = from(types).pipe(
-        mergeMap(async (type) => {
-          let posts = await this.getPostsWithChildren(type, 0, 5);
-          posts = posts.map((post) => {
-            delete post.body;
-            delete post.source_url;
-            return post;
+      const metadata = { child_count, resume: true };
+      const source_url = '';
+      const results = { ...parent, source_url, metadata };
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
+  }
+
+  async resumeHome(start = 0, limit = 25) {
+    let response: IResponse;
+    try {
+      const parents = await this.postRepository.find({
+        where: { parent_id: IsNull() },
+        skip: start,
+        take: limit,
+      });
+      console.log(parents);
+
+      const results$ = from(parents).pipe(
+        mergeMap(async (parent) => {
+          const child_count = await this.postRepository.countBy({
+            parent_id: parent.id,
           });
 
-          const countPosts = await this.postRepository.count({
-            where: { parent_id: IsNull(), type_stage: type },
-          });
-          const countComments = await this.postRepository.count({
-            where: { parent_id: Not(IsNull()), type_stage: type },
-          });
-          return { type_stage: type, posts, countPosts, countComments };
+          const metadata = { child_count, resume: true };
+          const source_url = '';
+
+          // const child = this.postRepository.countBy({parent_id: parent.id})
+          // let children = (await this.postRepository
+          //   .createQueryBuilder('post')
+          //   .leftJoinAndSelect('post.user', 'users') // Faz o join com a tabela de usuários
+          //   .where('post.parent_id = :parentId', { parentId: parent.id })
+          //   .select([
+          //     'post', // Seleciona todos os campos do post
+          //     'users.photoURL', // Corrigido para usar o alias 'users'
+          //     'users.social_links', // Corrigido para usar o alias 'users'
+          //     'users.permission', // Corrigido para usar o alias 'users'
+          //   ])
+          //   .getMany()) as CreatePostDto[];
+
+          // if (!children.length) {
+          //   return parent;
+          // }
+
+          // children = await firstValueFrom(
+          //   this.getChildren(children, parent.id),
+          // );
+          return { ...parent, source_url, metadata };
         }),
         toArray(),
+        map((items) => items.sort((a, b) => b.id - a.id)),
       );
 
-      const results = await firstValueFrom(groups$);
+      const results = await firstValueFrom(results$);
 
       response = {
         error: false,
@@ -433,7 +472,7 @@ export class PostService {
   async getPostsWithChildren(
     type = '',
     start = 0,
-    limit = 50,
+    limit = 20,
     typeOrder = 'recentes',
   ) {
     let where;
@@ -560,8 +599,6 @@ export class PostService {
         throw new Error('Post não encontrado');
       }
 
-      results = parent;
-
       // Busca os filhos usando QueryBuilder
       let children = (await this.postRepository
         .createQueryBuilder('post')
@@ -576,9 +613,15 @@ export class PostService {
         ])
         .getMany()) as CreatePostDto[];
 
+      const metadata = { child_count: children.length, resume: false };
+      results = { ...parent, metadata };
+
       if (children.length) {
         children = await firstValueFrom(this.getChildren(children, parent.id));
-        results = { ...parent, children };
+        results = {
+          ...results,
+          children,
+        };
       }
 
       response = {

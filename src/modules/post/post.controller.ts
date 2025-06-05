@@ -7,10 +7,12 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
+import { AuthGuard } from 'src/utils/guards/auth.guard';
 
 @Controller('posts')
 export class PostController {
@@ -49,8 +51,15 @@ export class PostController {
   }
 
   @Get('home')
-  resumeHome() {
-    return this.postService.resumeHome();
+  resumeHome(@Query('start') start: number, @Query('limit') limit: number) {
+    start = start ? +start : 0;
+    limit = limit ? +limit : 50;
+    return this.postService.resumeHome(start, limit);
+  }
+
+  @Get('summary')
+  resumePost(@Query('slug') slug: string) {
+    return this.postService.resumeOne(slug);
   }
 
   @Get('query')
@@ -58,31 +67,37 @@ export class PostController {
     return this.postService.search(type, term);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':slug/author/:id')
   isAuthor(@Param('slug') slug: string, @Param('id') id: string) {
     return this.postService.isAuthor(slug, +id);
   }
 
   @Get('total')
-  recordsTotal(@Query('type') type?: string) {
-    return this.postService.recordsTotal(type);
+  recordsTotal() {
+    return this.postService.recordsTotal();
   }
 
+  @UseGuards(AuthGuard)
   @Get('search')
-  findOne(@Query('slug') slug: string) {
+  findOne(@Query('slug') slug: string, @Body() body: any) {
+    console.log(body);
     return this.postService.findOne(slug);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePostDto: UpdatePostDto) {
     return this.postService.update(+id, updatePostDto);
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.postService.remove(+id);
   }
 
+  @UseGuards(AuthGuard)
   @Get('fake')
   fake() {
     return this.postService.addRoboComment();
