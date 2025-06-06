@@ -22,27 +22,27 @@ export class PaymentService {
   optsItems = [
     {
       id: '1',
-      title: 'MAIN STAGE TRIMESTRAL',
+      title: 'DOAÇÃO OUVINTE',
       quantity: 1,
       currency_id: 'BRL',
-      unit_price: 15,
-      description: 'assinatura pré paga trimestral',
+      unit_price: 30,
+      description: 'Pra quem ouve, curte e compartilha a vibe.',
     },
     {
       id: '2',
-      title: 'MAIN STAGE SEMESTRAL',
+      title: 'DOAÇÃO DJ',
       quantity: 1,
       currency_id: 'BRL',
       unit_price: 60,
-      description: 'assinatura pré paga trimestral',
+      description: 'Pra quem ouve, curte, mixa e compartilha a vibe.',
     },
     {
       id: '3',
-      title: 'MAIN STAGE ANUAL',
+      title: 'DOAÇÃO PROMOTER',
       quantity: 1,
       currency_id: 'BRL',
       unit_price: 120,
-      description: 'assinatura pré paga trimestral',
+      description: 'Pra quem ouve, curte, mixa e compartilha a vibe.',
     },
   ];
 
@@ -61,7 +61,7 @@ export class PaymentService {
   setPreferenceMP(
     external_reference: string,
     email: string,
-    plan_type: string = EPlanTypes.TRIMESTRAL,
+    plan_type: string = EPlanTypes.DJ,
     isFirstPlan = false,
   ) {
     const preference = new Preference(this.clientMercadoPago);
@@ -105,7 +105,7 @@ export class PaymentService {
   async create(
     user_id: number,
     email: string,
-    plan_type: string = EPlanTypes.TRIMESTRAL,
+    plan_type: string = EPlanTypes.DJ,
   ) {
     let response: IResponse;
 
@@ -358,21 +358,21 @@ export class PaymentService {
 
   private generatePlanEnd(plan_start: string, plan_type: EPlanTypes) {
     let plan_end;
-    if (plan_type === EPlanTypes.TRIMESTRAL) {
+    if (plan_type === EPlanTypes.OUVINTE) {
       plan_end = dayjs(plan_start)
-        .add(3, 'month')
+        .add(1, 'month')
         .tz('America/Sao_Paulo', true)
         .endOf('day')
         .format('YYYY-MM-DD HH:mm:ss');
-    } else if (plan_type === EPlanTypes.SEMESTRAL) {
+    } else if (plan_type === EPlanTypes.DJ) {
       plan_end = dayjs(plan_start)
-        .add(6, 'month')
+        .add(1, 'month')
         .tz('America/Sao_Paulo', true)
         .endOf('day')
         .format('YYYY-MM-DD HH:mm:ss');
     } else {
       plan_end = dayjs(plan_start)
-        .add(1, 'year')
+        .add(1, 'month')
         .tz('America/Sao_Paulo', true)
         .endOf('day')
         .format('YYYY-MM-DD HH:mm:ss');
@@ -382,14 +382,14 @@ export class PaymentService {
 
   private selectPlanPrice(plan_type: string, isFirstPlan = false) {
     let items;
-    if (plan_type === EPlanTypes.TRIMESTRAL) {
+    if (plan_type === EPlanTypes.OUVINTE) {
       items = this.optsItems
         .filter((plan) => plan.id === '1')
         .map((elem) => {
           const unit_price = isFirstPlan ? elem.unit_price : 30;
           return { ...elem, unit_price };
         });
-    } else if (plan_type === EPlanTypes.SEMESTRAL) {
+    } else if (plan_type === EPlanTypes.DJ) {
       items = this.optsItems.filter((plan) => plan.id === '2');
     } else {
       items = this.optsItems.filter((plan) => plan.id === '3');

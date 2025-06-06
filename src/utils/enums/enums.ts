@@ -17,9 +17,9 @@ export enum ETypeStage {
 }
 
 export enum EPlanTypes {
-  TRIMESTRAL = 'TRIMESTRAL',
-  SEMESTRAL = 'SEMESTRAL',
-  ANUAL = 'ANUAL',
+  OUVINTE = 'OUVINTE',
+  DJ = 'DJ',
+  PROMOTER = 'PROMOTER',
 }
 
 export enum EPlanStatus {
