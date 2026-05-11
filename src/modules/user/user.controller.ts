@@ -15,15 +15,17 @@ export class UserController {
     return this.userService.isNew(email);
   }
 
-  @UseGuards(AuthGuard)
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
   }
 
-  @UseGuards(AuthGuard)
   @Get()
-  findAll() {
+  find(@Query('email') email?: string) {
+    if (email) {
+      return this.userService.findOne(email);
+    }
+
     return this.userService.findAll();
   }
 

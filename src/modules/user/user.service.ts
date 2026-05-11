@@ -7,6 +7,7 @@ import { UserEntity } from './entities/user.entity';
 import { Repository } from 'typeorm';
 import { IResponse } from 'src/utils/interfaces/response';
 import { PaymentService } from '../payment/payment.service';
+import { DecodedIdToken } from 'firebase-admin/auth';
 
 @Injectable()
 export class UserService {
@@ -60,18 +61,50 @@ export class UserService {
     }
   }
 
-  findAll() {
-    return `This action returns all user`;
+  async findAll() {
+    let response: IResponse;
+    try {
+      const results = await this.userRepository.find({
+        order: { id: 'DESC' },
+      });
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      return response;
+    }
   }
 
   async findOneById(id: number) {
     return await this.userRepository.findOneBy({ id });
   }
 
+  async findByEmail(email: string) {
+    return await this.userRepository.findOneBy({ email });
+  }
+
   async findOne(email: string) {
     let response: IResponse;
     try {
-      const user = await this.userRepository.findOneBy({ email });
+      const user = await this.findByEmail(email);
+
+      if (!user) {
+        response = {
+          error: false,
+          results: null,
+          message: 'usuário não encontrado.',
+        };
+        return response;
+      }
+
       const plan = await this.paymentServie.getCurrentPaymentForUser(user.id);
       response = {
         error: false,
@@ -110,6 +143,35 @@ export class UserService {
       };
       return response;
     }
+  }
+
+  async findOrCreateFromFirebaseToken(decoded: DecodedIdToken) {
+    const email = decoded.email;
+
+    if (!email) {
+      throw new Error('Token Firebase sem e-mail');
+    }
+
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      const { results } = await this.findOne(email);
+      return results;
+    }
+
+    const metadata = JSON.stringify({
+      firebaseUid: decoded.uid,
+      provider: decoded.firebase?.sign_in_provider ?? null,
+    });
+
+    const createUserDto: CreateUserDto = {
+      displayName: decoded.name ?? email,
+      email,
+      photoURL: decoded.picture ?? '',
+      metadata,
+    };
+
+    const { results } = await this.create(createUserDto);
+    return results;
   }
 
   remove(id: number) {

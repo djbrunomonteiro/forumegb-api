@@ -18,7 +18,7 @@ import {
   throwError,
   toArray,
 } from 'rxjs';
-import { ETypeStage } from 'src/utils/enums/enums';
+import { EStatusPost, ETypeStage } from 'src/utils/enums/enums';
 import { UserService } from '../user/user.service';
 import { PreviewService } from '../preview/preview.service';
 import { file } from 'googleapis/build/src/apis/file';
@@ -342,23 +342,55 @@ export class PostService {
     }
   }
 
-  async findAll(type = '', start = 1, limit = 20, typeOrder = 'recentes') {
+  async findAll(start = 0, limit = 20, typeOrder = 'recentes') {
     let response: IResponse;
     try {
-      const posts = await this.getPostsWithChildren(
-        type,
-        start,
-        limit,
-        typeOrder,
-      );
+      const sortOrder = typeOrder === 'antigos' ? 'ASC' : 'DESC';
+      const parsedStart = Number.isNaN(+start) ? 0 : +start;
+      const parsedLimit = Number.isNaN(+limit) ? 20 : +limit;
 
-      const results = posts.map((post) => {
-        return { ...post, source_url: '' };
-      });
+      const [results, records] = await Promise.all([
+        this.postRepository
+          .createQueryBuilder('post')
+          .select([
+            'post.id AS id',
+            'post.title AS title',
+            'post.music_preview AS music_preview',
+            'post.thumbnail AS thumbnail',
+            'post.slug AS slug',
+            'post.owner_id AS owner_id',
+            'post.owner_username AS owner_username',
+            'post.likes AS likes',
+            'post.tags AS tags',
+            'post.created_at AS created_at',
+          ])
+          .addSelect((subQuery) => {
+            return subQuery
+              .select('COUNT(child.id)', 'parents')
+              .from(PostEntity, 'child')
+              .where('child.parent_id = post.id')
+              .andWhere('child.status = :status', {
+                status: EStatusPost.PUBLISHED,
+              });
+          }, 'parents')
+          .where('post.parent_id IS NULL')
+          .andWhere('post.status = :status', {
+            status: EStatusPost.PUBLISHED,
+          })
+          .orderBy('post.created_at', sortOrder)
+          .offset(parsedStart)
+          .limit(parsedLimit)
+          .getRawMany(),
+        this.postRepository
+          .createQueryBuilder('post')
+          .where('post.parent_id IS NULL')
+          .getCount(),
+      ]);
 
       response = {
         error: false,
         results,
+        records,
         message: 'operação realizada com sucesso.',
       };
       return response;
@@ -697,7 +729,7 @@ export class PostService {
 
     return;
 
-    const resFindAll = await this.findAll(ETypeStage.FLOORSTAGE);
+    const resFindAll = await this.findAll();
 
     from(resFindAll.results)
       .pipe(

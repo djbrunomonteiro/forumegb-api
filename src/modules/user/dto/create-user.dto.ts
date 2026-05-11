@@ -19,8 +19,9 @@ export class CreateUserDto {
   @IsString()
   social_links?: string;
 
+  @IsOptional()
   @IsString()
-  permission: string;
+  permission?: string;
 
   @IsOptional() // Pode ser opcional
   @IsString()

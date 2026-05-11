@@ -32,6 +32,24 @@
 $ npm install
 ```
 
+## Firebase Admin
+
+O backend valida o `Authorization: Bearer <idToken>` usando `firebase-admin`.
+
+Configure no `.env`:
+
+```env
+FIREBASE_PROJECT_ID='forumegb-web'
+FIREBASE_CLIENT_EMAIL='firebase-adminsdk-xxxx@forumegb-web.iam.gserviceaccount.com'
+FIREBASE_PRIVATE_KEY='-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n'
+```
+
+Importante:
+
+- O objeto `firebaseConfig` do frontend (`apiKey`, `authDomain`, `appId`, etc.) nao e suficiente para o Admin SDK.
+- `FIREBASE_CLIENT_EMAIL` e `FIREBASE_PRIVATE_KEY` precisam vir da service account do Firebase Console.
+- Caminho: `Firebase Console > Project Settings > Service accounts > Generate new private key`.
+
 ## Compile and run the project
 
 ```bash

@@ -42,12 +42,11 @@ export class PostController {
 
   @Get()
   findAll(
-    @Query('type') type: string,
     @Query('start') start: number,
     @Query('limit') limit: number,
     @Query('order') order: string,
   ) {
-    return this.postService.findAll(type, start, limit, order);
+    return this.postService.findAll(start, limit, order);
   }
 
   @Get('home')
@@ -60,6 +59,12 @@ export class PostController {
   @Get('summary')
   resumePost(@Query('slug') slug: string) {
     return this.postService.resumeOne(slug);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('complete/:param')
+  findComplete(@Param('param') param: string) {
+    return this.postService.findOne(param);
   }
 
   @Get('query')

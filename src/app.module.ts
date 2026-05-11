@@ -15,6 +15,7 @@ import { diskStorage } from 'multer';
 
 import { existsSync, mkdirSync } from 'fs';
 import { PaymentModule } from './modules/payment/payment.module';
+import { AuthModule } from './modules/auth/auth.module';
 const uploadDir = join(__dirname, '../uploads');
 
 if (!existsSync(uploadDir)) {
@@ -41,6 +42,7 @@ if (!existsSync(uploadDir)) {
     JwtModule,
     PostModule,
     PreviewModule,
+    AuthModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..'),
     }),
