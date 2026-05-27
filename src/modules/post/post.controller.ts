@@ -56,6 +56,30 @@ export class PostController {
     return this.postService.resumeHome(start, limit);
   }
 
+  @Get('ranking')
+  getTopRanking(@Query('limit') limit: number) {
+    limit = limit ? +limit : 5;
+    return this.postService.getTopRanking(limit);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId/posts')
+  getUserPosts(@Param('userId') userId: string) {
+    return this.postService.getUserPosts(+userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId/comments')
+  getUserComments(@Param('userId') userId: string) {
+    return this.postService.getUserComments(+userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('user/:userId/likes')
+  getUserLikedPosts(@Param('userId') userId: string) {
+    return this.postService.getUserLikedPosts(+userId);
+  }
+
   @Get('summary')
   resumePost(@Query('slug') slug: string) {
     return this.postService.resumeOne(slug);

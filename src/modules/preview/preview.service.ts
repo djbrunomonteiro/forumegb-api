@@ -18,11 +18,19 @@ export class PreviewService {
 
   // Configuração da autenticação com a Conta de Serviço
   private initGoogleAPI() {
-    const auth = new google.auth.GoogleAuth({
-      credentials: JSON.parse(process.env.AGENT_GOOGLE),
-      scopes: ['https://www.googleapis.com/auth/drive'],
-    });
-    this.drive = google.drive({ version: 'v3', auth });
+    try {
+      if (!process.env.AGENT_GOOGLE) {
+        console.warn('Warning: AGENT_GOOGLE environment variable is not defined.');
+        return;
+      }
+      const auth = new google.auth.GoogleAuth({
+        credentials: JSON.parse(process.env.AGENT_GOOGLE),
+        scopes: ['https://www.googleapis.com/auth/drive'],
+      });
+      this.drive = google.drive({ version: 'v3', auth });
+    } catch (error) {
+      console.error('Error initializing Google API in PreviewService:', error.message);
+    }
   }
 
   async create(file: any, start = 0, end = 30) {

@@ -26,7 +26,7 @@ if (!existsSync(uploadDir)) {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', '../.env'],
     }),
     TypeOrmModule.forRoot({
       type: 'mysql',

@@ -67,17 +67,26 @@ export class PostService {
   async search(stage: string, term: string) {
     let response: IResponse;
     try {
-      const results = await this.postRepository
-        .createQueryBuilder('post')
-        .where('post.type_stage = :typeStage', { typeStage: stage }) // Substitua pelo valor dinâmico
-        .andWhere(
-          new Brackets((qb) => {
-            qb.where('post.title LIKE :term', { term: `%${term}%` }) // Substitua pelo termo dinâmico
+      const qb = this.postRepository.createQueryBuilder('post')
+        .where('post.parent_id IS NULL')
+        .andWhere('post.status = :status', { status: EStatusPost.PUBLISHED });
+
+      if (stage && stage !== 'all' && stage !== 'undefined') {
+        qb.andWhere('post.type_stage = :typeStage', { typeStage: stage });
+      }
+
+      if (term) {
+        qb.andWhere(
+          new Brackets((qbInner) => {
+            qbInner.where('post.title LIKE :term', { term: `%${term}%` })
               .orWhere('post.body LIKE :term', { term: `%${term}%` })
-              .orWhere('post.tags LIKE :term', { term: `%${term}%` });
+              .orWhere('post.tags LIKE :term', { term: `%${term}%` })
+              .orWhere('post.owner_username LIKE :term', { term: `%${term}%` });
           }),
-        )
-        .getMany();
+        );
+      }
+
+      const results = await qb.orderBy('post.created_at', 'DESC').getMany();
 
       response = {
         error: false,
@@ -511,9 +520,9 @@ export class PostService {
     let sort;
     let order;
     if (type in ETypeStage) {
-      where = `post.parent_id IS NULL AND post.type_stage = '${type}'`;
+      where = `post.parent_id IS NULL AND post.status = '${EStatusPost.PUBLISHED}' AND post.type_stage = '${type}'`;
     } else {
-      where = 'post.parent_id IS NULL';
+      where = `post.parent_id IS NULL AND post.status = '${EStatusPost.PUBLISHED}'`;
     }
 
     sort = 'post.created_at';
@@ -697,8 +706,158 @@ export class PostService {
     }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} post`;
+  async remove(id: number) {
+    let response: IResponse;
+    try {
+      await this.postRepository.update(id, { status: EStatusPost.DELETED });
+      response = {
+        error: false,
+        results: { id },
+        message: 'Post excluído logicamente com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'Falha ao excluir post.',
+      };
+      throw new BadRequestException(response);
+    }
+  }
+
+  async getUserPosts(userId: number) {
+    let response: IResponse;
+    try {
+      const results = await this.postRepository.find({
+        where: {
+          owner_id: userId,
+          parent_id: IsNull(),
+          status: EStatusPost.PUBLISHED,
+        },
+        order: { created_at: 'DESC' },
+      });
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
+  }
+
+  async getUserComments(userId: number) {
+    let response: IResponse;
+    try {
+      const results = await this.postRepository.find({
+        where: {
+          owner_id: userId,
+          parent_id: Not(IsNull()),
+          status: EStatusPost.PUBLISHED,
+        },
+        order: { created_at: 'DESC' },
+      });
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
+  }
+
+  async getUserLikedPosts(userId: number) {
+    let response: IResponse;
+    try {
+      const results = await this.postRepository
+        .createQueryBuilder('post')
+        .where('post.parent_id IS NULL')
+        .andWhere('post.status = :status', { status: EStatusPost.PUBLISHED })
+        .andWhere('post.likes LIKE :userLike', { userLike: `%"id_user":${userId}%` })
+        .orderBy('post.created_at', 'DESC')
+        .getMany();
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
+  }
+
+  async getTopRanking(limit = 5) {
+    let response: IResponse;
+    try {
+      const posts = await this.postRepository.find({
+        where: { parent_id: IsNull(), status: EStatusPost.PUBLISHED },
+      });
+
+      const ranked = await Promise.all(
+        posts.map(async (post) => {
+          const commentCount = await this.postRepository.countBy({
+            parent_id: post.id,
+            status: EStatusPost.PUBLISHED,
+          });
+
+          let likesCount = 0;
+          try {
+            const likesArr = JSON.parse(post.likes);
+            if (Array.isArray(likesArr)) {
+              likesCount = likesArr.length;
+            }
+          } catch {
+            likesCount = 0;
+          }
+
+          const score = commentCount * 2 + likesCount;
+
+          return {
+            ...post,
+            commentCount,
+            likesCount,
+            score,
+          };
+        }),
+      );
+
+      ranked.sort((a, b) => b.score - a.score);
+      const results = ranked.slice(0, limit);
+
+      response = {
+        error: false,
+        results,
+        message: 'operação realizada com sucesso.',
+      };
+      return response;
+    } catch (error) {
+      response = {
+        error: true,
+        results: error?.message,
+        message: 'falha ao realizar operação',
+      };
+      throw new BadRequestException(response);
+    }
   }
 
   async isAuthor(slug: string, owner_id: number) {
