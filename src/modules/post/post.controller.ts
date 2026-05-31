@@ -8,15 +8,39 @@ import {
   Delete,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from '@nestjs/common';
 import { PostService } from './post.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { AuthGuard } from 'src/utils/guards/auth.guard';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Request } from 'express';
+import { diskStorage } from 'multer';
+import { join } from 'path';
 
 @Controller('posts')
 export class PostController {
   constructor(private readonly postService: PostService) {}
+
+  @UseGuards(AuthGuard)
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'uploads'),
+        filename: (req, file, cb) => {
+          const fileName = `${Date.now()}-${file.originalname}`;
+          cb(null, fileName);
+        },
+      }),
+    }),
+  )
+  uploadThumbnail(@UploadedFile() file: any, @Req() req: Request) {
+    return this.postService.uploadThumbnail(file, req);
+  }
 
   @Post('generatefolderfromdrive')
   generatePostFolder(@Query('folderId') folderId) {

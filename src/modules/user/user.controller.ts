@@ -36,6 +36,17 @@ export class UserController {
   }
 
   @UseGuards(AuthGuard)
+  @Get(':id')
+  async findOneById(@Param('id') id: string) {
+    const user = await this.userService.findOneById(+id);
+    return {
+      error: false,
+      results: user,
+      message: 'operação realizada com sucesso.',
+    };
+  }
+
+  @UseGuards(AuthGuard)
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);

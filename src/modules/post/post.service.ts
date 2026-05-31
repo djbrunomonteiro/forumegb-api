@@ -64,6 +64,34 @@ export class PostService {
     dayjs.extend(timezone);
   }
 
+  uploadThumbnail(file: any, req: any) {
+    let response: IResponse;
+
+    if (!file) {
+      response = {
+        error: true,
+        results: undefined,
+        message: 'Nenhuma imagem foi enviada.',
+      };
+      throw new BadRequestException(response);
+    }
+
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const fileUrl = `${protocol}://${host}/uploads/${file.filename}`;
+
+    response = {
+      error: false,
+      results: {
+        filename: file.filename,
+        url: fileUrl,
+      },
+      message: 'Upload de thumbnail realizado com sucesso!',
+    };
+
+    return response;
+  }
+
   async search(stage: string, term: string) {
     let response: IResponse;
     try {
@@ -298,6 +326,19 @@ export class PostService {
       const user = await this.userService.findOneById(createPostDto.owner_id);
       if (!user) {
         throw new BadRequestException('Usuário não encontrado.');
+      }
+
+      // Geração automática de slug caso seja um post raiz e não tenha slug definido
+      if (!fatherId && !createPostDto.parent_id && (!createPostDto.slug || createPostDto.slug.trim() === '')) {
+        const baseSlug = String(createPostDto.title)
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9\s-]/g, '')
+          .trim()
+          .replace(/\s+/g, '-');
+        
+        createPostDto.slug = `${baseSlug}-${Date.now()}`;
       }
 
       let results = await this.postRepository.save({

@@ -126,6 +126,7 @@ export class UserService {
     let response: IResponse;
     try {
       delete updateUserDto.permission;
+      delete updateUserDto.email;
       await this.userRepository.update(id, updateUserDto);
       const userRef = await this.userRepository.findOneBy({ id });
       const { results } = await this.findOne(userRef.email);
